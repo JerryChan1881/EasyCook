@@ -1,0 +1,214 @@
+package com.example.easycook.ui.screens
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import com.example.easycook.StateViewModel
+import com.example.easycook.data.Recipe
+
+@Composable
+fun HomeScreen(
+    navController: NavHostController,
+    stateViewModel: StateViewModel,
+    modifier: Modifier = Modifier
+) {
+    val recipes by stateViewModel.recipes.collectAsState()
+    var recipeToDelete by remember { mutableStateOf<Recipe?>(null) }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            IconButton(
+                onClick = {
+                    val result = navController.popBackStack()
+                    println("POP RESULT = $result")
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Retour"
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "EasyCook",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+
+                IconButton(onClick = {}) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search"
+                    )
+                }
+            }
+
+            Text(
+                text = "What do you want to cook?",
+                modifier = Modifier.padding(horizontal = 16.dp),
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 88.dp)
+            ) {
+                items(recipes) { recipe ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RecipeCard(
+                            recipe = recipe,
+                            onClick = {
+                                navController.navigate("recipeDetailScreen/${recipe.id}")
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        IconButton(onClick = { recipeToDelete = recipe }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Supprimer la recette",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        FloatingActionButton(
+            onClick = { navController.navigate("addRecipeScreen") },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Ajouter une recette"
+            )
+        }
+
+
+        recipeToDelete?.let { recipe ->
+            AlertDialog(
+                onDismissRequest = { recipeToDelete = null },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                },
+                title = { Text("Supprimer la recette") },
+                text = {
+                    Text("Voulez-vous vraiment supprimer « ${recipe.title} » ? Cette action est définitive.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            stateViewModel.deleteRecipe(recipe.id)
+                            recipeToDelete = null
+                        }
+                    ) {
+                        Text(
+                            text = "Supprimer",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { recipeToDelete = null }) {
+                        Text("Annuler")
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun RecipeCard(
+    recipe: Recipe,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = recipe.title,
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "${recipe.cookingTime} min",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            IconButton(onClick = {}) {
+                Icon(
+                    imageVector = Icons.Default.FavoriteBorder,
+                    contentDescription = "Add to favorites"
+                )
+            }
+        }
+    }
+}
