@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.easycook.StateViewModel
 import com.example.easycook.data.Recipe
+import com.example.easycook.ui.composable.RecipeCard
 
 @Composable
 fun HomeScreen(
@@ -51,18 +52,6 @@ fun HomeScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            IconButton(
-                onClick = {
-                    val result = navController.popBackStack()
-                    println("POP RESULT = $result")
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Retour"
-                )
-            }
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -168,47 +157,6 @@ fun HomeScreen(
                     }
                 }
             )
-        }
-    }
-}
-
-@Composable
-fun RecipeCard(
-    recipe: Recipe,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = recipe.title,
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "${recipe.cookingTime} min",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.FavoriteBorder,
-                    contentDescription = "Add to favorites"
-                )
-            }
         }
     }
 }
