@@ -51,10 +51,6 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun getRecipeById(id: Int): Recipe? {
-        return recipes.value.find { it.id == id }
-    }
-
     fun addRecipe(
         title: String,
         image: String,

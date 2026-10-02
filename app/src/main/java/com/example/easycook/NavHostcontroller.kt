@@ -1,6 +1,8 @@
 package com.example.easycook
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -29,13 +31,13 @@ fun NavHostModel(
         }
 
         composable("recipeDetailScreen/{recipeId}") { backStackEntry ->
-            println("RECIPE DETAIL SCREEN")
+            val recipes by stateViewModel.recipes.collectAsState()
             val recipeId = backStackEntry.arguments
                 ?.getString("recipeId")
                 ?.toIntOrNull()
 
-            val recipe = recipeId?.let {
-                stateViewModel.getRecipeById(it)
+            val recipe = recipeId?.let { id ->
+                recipes.find { it.id == id }
             }
 
             if (recipe != null) {
