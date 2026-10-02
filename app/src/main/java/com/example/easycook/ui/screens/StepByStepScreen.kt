@@ -3,6 +3,7 @@ package com.example.easycook.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +31,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,10 +40,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.easycook.StateViewModel
 import com.example.easycook.data.Recipe
+import com.example.easycook.data.RecipeStep
 
 @Composable
 fun StepByStepScreen(
@@ -49,18 +53,41 @@ fun StepByStepScreen(
     navController: NavHostController,
     stateViewModel: StateViewModel
 ) {
-    val steps = stateViewModel.getSteps(recipe.id)
-    val newStepFocusRequester = remember { FocusRequester() }
+    val steps by stateViewModel.observeSteps(recipe.id)
+        .collectAsState(initial = emptyList())
+    val focusRequester = remember { FocusRequester() }
 
-    var editingStepId by remember { mutableStateOf<Long?>(null) }
+    var pendingStepId by remember { mutableStateOf<Long?>(null) }
     var instructionDraft by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val startAddingStep = {
-        editingStepId = null
         errorMessage = null
         instructionDraft = ""
-        stateViewModel.addStep(recipe.id)
+        stateViewModel.addStep(recipe.id, "") { newStepId ->
+            pendingStepId = newStepId
+        }
+    }
+
+    val confirmDraft: () -> Unit = {
+        val trimmed = instructionDraft.trim()
+        if (trimmed.isBlank()) {
+            errorMessage = "L'instruction ne peut pas être vide."
+        } else {
+            pendingStepId?.let { stepId ->
+                stateViewModel.updateStepInstruction(stepId, trimmed)
+            }
+            pendingStepId = null
+            errorMessage = null
+            instructionDraft = ""
+        }
+    }
+
+    val cancelDraft: () -> Unit = {
+        pendingStepId?.let { stepId -> stateViewModel.deleteStep(stepId) }
+        pendingStepId = null
+        errorMessage = null
+        instructionDraft = ""
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -151,7 +178,7 @@ fun StepByStepScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    contentPadding = PaddingValues(
                         start = 16.dp,
                         end = 16.dp,
                         bottom = 96.dp
@@ -160,45 +187,29 @@ fun StepByStepScreen(
                     items(steps, key = { it.id }) { step ->
                         StepCard(
                             step = step,
-                            isEditing = step.id == editingStepId,
+                            isEditing = step.id == pendingStepId,
                             instructionDraft = instructionDraft,
                             errorMessage = errorMessage,
                             onInstructionDraftChange = { instructionDraft = it },
                             onStartEditing = {
-                                editingStepId = step.id
-                                errorMessage = null
+                                pendingStepId = step.id
                                 instructionDraft = step.instruction
-                            },
-                            onCancelEditing = {
-                                editingStepId = null
                                 errorMessage = null
-                                instructionDraft = ""
                             },
-                            onConfirmEditing = {
-                                val trimmed = instructionDraft.trim()
-                                if (trimmed.isBlank()) {
-                                    errorMessage = "L'instruction ne peut pas être vide."
-                                } else {
-                                    stateViewModel.updateStepInstruction(
-                                        recipeId = recipe.id,
-                                        stepId = step.id,
-                                        instruction = trimmed
-                                    )
-                                    editingStepId = null
-                                    errorMessage = null
-                                    instructionDraft = ""
-                                }
+                            onConfirmEditing = confirmDraft,
+                            onCancelEditing = cancelDraft,
+                            onToggleDone = { isChecked ->
+                                stateViewModel.toggleStep(step.id, isChecked)
                             },
-                            onToggleDone = { stateViewModel.toggleStep(recipe.id, step.id) },
                             onDelete = {
-                                if (editingStepId == step.id) {
-                                    editingStepId = null
+                                if (pendingStepId == step.id) {
+                                    pendingStepId = null
                                     errorMessage = null
                                     instructionDraft = ""
                                 }
-                                stateViewModel.deleteStep(recipe.id, step.id)
+                                stateViewModel.deleteStep(step.id)
                             },
-                            newStepFocusRequester = newStepFocusRequester
+                            focusRequester = focusRequester
                         )
                     }
                 }
@@ -221,17 +232,17 @@ fun StepByStepScreen(
 
 @Composable
 private fun StepCard(
-    step: com.example.easycook.data.RecipeStep,
+    step: RecipeStep,
     isEditing: Boolean,
     instructionDraft: String,
     errorMessage: String?,
     onInstructionDraftChange: (String) -> Unit,
     onStartEditing: () -> Unit,
-    onCancelEditing: () -> Unit,
     onConfirmEditing: () -> Unit,
-    onToggleDone: () -> Unit,
+    onCancelEditing: () -> Unit,
+    onToggleDone: (Boolean) -> Unit,
     onDelete: () -> Unit,
-    newStepFocusRequester: FocusRequester
+    focusRequester: FocusRequester
 ) {
     Card(
         modifier = Modifier
@@ -243,7 +254,7 @@ private fun StepCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
                     checked = step.isDone,
-                    onCheckedChange = { onToggleDone() }
+                    onCheckedChange = { onToggleDone(it) }
                 )
 
                 if (isEditing) {
@@ -252,7 +263,7 @@ private fun StepCard(
                         onValueChange = { onInstructionDraftChange(it) },
                         modifier = Modifier
                             .weight(1f)
-                            .focusRequester(newStepFocusRequester),
+                            .focusRequester(focusRequester),
                         label = { Text("Instruction") },
                         placeholder = { Text("Ex. Bouillir l'eau à 45 degrés") },
                         singleLine = false,
@@ -274,7 +285,7 @@ private fun StepCard(
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodyLarge,
                         textDecoration = if (step.isDone) {
-                            androidx.compose.ui.text.style.TextDecoration.LineThrough
+                            TextDecoration.LineThrough
                         } else {
                             null
                         },

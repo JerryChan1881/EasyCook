@@ -176,8 +176,50 @@ fun AddRecipeScreen(
             Spacer(modifier = Modifier.width(8.dp))
             Text("Ajouter un ingrédient")
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Étapes de préparation (facultatif)",
+            style = MaterialTheme.typography.titleLarge
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        steps.forEachIndexed { index, step ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${index + 1}.",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                OutlinedTextField(
+                    value = step.description,
+                    onValueChange = { value ->
+                        steps[index] = step.copy(description = value)
+                    },
+                    modifier = Modifier.weight(1f),
+                    label = { Text("Instruction") },
+                    placeholder = { Text("Ex. Bouillir l'eau à 45 degrés") },
+                    maxLines = 3
+                )
+                IconButton(
+                    onClick = { steps.removeAt(index) }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Supprimer l'étape"
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         Button(
-            onClick = { ingredients.add(IngredientForm()) },
+            onClick = { steps.add(StepForm()) },
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
@@ -187,7 +229,6 @@ fun AddRecipeScreen(
             Spacer(modifier = Modifier.width(8.dp))
             Text("Ajouter une étape de préparation")
         }
-
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -218,6 +259,7 @@ fun AddRecipeScreen(
                                     name = it.name.trim()
                                 )
                             },
+                            steps = steps.map { it.description.trim() }.filter { it.isNotBlank() },
                             onComplete = { navController.popBackStack() }
                         )
                     }

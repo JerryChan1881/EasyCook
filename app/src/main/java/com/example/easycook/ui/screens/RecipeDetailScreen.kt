@@ -27,6 +27,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +59,19 @@ fun RecipeDetailScreen(
             addAll(recipe.ingredientList.map { IngredientForm(it.quantity, it.name) })
         }
     }
+    val persistedStepsState = stateViewModel.observeSteps(recipe.id).collectAsState(initial = null)
+    val persistedSteps = persistedStepsState.value.orEmpty()
+    val steps = remember { mutableStateListOf<String>() }
+    var stepsLoaded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(persistedStepsState.value) {
+        val loadedSteps = persistedStepsState.value
+        if (!stepsLoaded && loadedSteps != null) {
+            steps.clear()
+            steps.addAll(loadedSteps.map { it.instruction })
+            stepsLoaded = true
+        }
+    }
 
     val resetForm: () -> Unit = {
         title = recipe.title
@@ -65,6 +80,8 @@ fun RecipeDetailScreen(
         description = recipe.description
         ingredients.clear()
         ingredients.addAll(recipe.ingredientList.map { IngredientForm(it.quantity, it.name) })
+        steps.clear()
+        steps.addAll(persistedSteps.map { it.instruction })
         errorMessage = null
     }
 
@@ -95,6 +112,7 @@ fun RecipeDetailScreen(
                             name = it.name.trim()
                         )
                     },
+                    steps = steps.map { it.trim() }.filter { it.isNotBlank() },
                     onComplete = {
                         isEditing = false
                         errorMessage = null
@@ -227,6 +245,57 @@ fun RecipeDetailScreen(
                     Text("Ajouter un ingrédient")
                 }
 
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Étapes de préparation",
+                    style = MaterialTheme.typography.titleLarge
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                steps.forEachIndexed { index, step ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${index + 1}.",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        OutlinedTextField(
+                            value = step,
+                            onValueChange = { value -> steps[index] = value },
+                            modifier = Modifier.weight(1f),
+                            label = { Text("Instruction") },
+                            placeholder = { Text("Ex. Bouillir l'eau à 45 degrés") },
+                            maxLines = 3
+                        )
+                        IconButton(
+                            onClick = { steps.removeAt(index) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Supprimer l'étape"
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                OutlinedButton(
+                    onClick = { steps.add("") },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Ajouter une étape de préparation")
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
 
                 OutlinedButton(
@@ -283,6 +352,35 @@ fun RecipeDetailScreen(
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
+                }
+
+                if (persistedSteps.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "Préparation",
+                        style = MaterialTheme.typography.titleLarge
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    persistedSteps.forEachIndexed { index, step ->
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        ) {
+                            Text(
+                                text = "${index + 1}.",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = step.instruction,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

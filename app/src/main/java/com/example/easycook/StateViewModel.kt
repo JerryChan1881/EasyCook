@@ -1,7 +1,6 @@
 package com.example.easycook
 
 import android.app.Application
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.easycook.data.Ingredient
@@ -9,6 +8,8 @@ import com.example.easycook.data.Recipe
 import com.example.easycook.data.RecipeDatabase
 import com.example.easycook.data.RecipeEntity
 import com.example.easycook.data.RecipeStep
+import com.example.easycook.data.StepEntity
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -59,6 +60,7 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
         cookingTime: Int,
         description: String,
         ingredients: List<Ingredient>,
+        steps: List<String>,
         onComplete: () -> Unit
     ) {
         viewModelScope.launch {
@@ -69,7 +71,8 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
                     cookingTime = cookingTime,
                     description = description
                 ),
-                ingredients = ingredients
+                ingredients = ingredients,
+                steps = steps
             )
             onComplete()
         }
@@ -82,6 +85,7 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
         cookingTime: Int,
         description: String,
         ingredients: List<Ingredient>,
+        steps: List<String>,
         onComplete: () -> Unit
     ) {
         viewModelScope.launch {
@@ -91,7 +95,8 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
                 image = image,
                 cookingTime = cookingTime,
                 description = description,
-                ingredients = ingredients
+                ingredients = ingredients,
+                steps = steps
             )
             onComplete()
         }
@@ -103,38 +108,53 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private val stepsByRecipe = mutableStateMapOf<Int, List<RecipeStep>>()
-    private var nextStepId = 0L
+    fun observeSteps(recipeId: Int): Flow<List<RecipeStep>> =
+        recipeDao.observeSteps(recipeId)
+            .map { steps ->
+                steps.map { step ->
+                    RecipeStep(
+                        id = step.id,
+                        instruction = step.instruction,
+                        isDone = step.isDone
+                    )
+                }
+            }
 
-    fun getSteps(recipeId: Int): List<RecipeStep> = stepsByRecipe[recipeId] ?: emptyList()
-
-    fun addStep(recipeId: Int, instruction: String = "") {
-        val step = RecipeStep(id = nextStepId++, instruction = instruction)
-        stepsByRecipe[recipeId] = getSteps(recipeId) + step
-    }
-
-    fun updateStepInstruction(recipeId: Int, stepId: Long, instruction: String) {
-        stepsByRecipe[recipeId] = getSteps(recipeId).map { step ->
-            if (step.id == stepId) step.copy(instruction = instruction) else step
+    fun addStep(recipeId: Int, instruction: String, onInserted: (Long) -> Unit) {
+        viewModelScope.launch {
+            val newStepId = recipeDao.insertStep(
+                StepEntity(
+                    recipeId = recipeId,
+                    position = recipeDao.nextStepPosition(recipeId),
+                    instruction = instruction
+                )
+            )
+            onInserted(newStepId)
         }
     }
 
-    fun toggleStep(recipeId: Int, stepId: Long) {
-        stepsByRecipe[recipeId] = getSteps(recipeId).map { step ->
-            if (step.id == stepId) step.copy(isDone = !step.isDone) else step
+    fun updateStepInstruction(stepId: Long, instruction: String) {
+        viewModelScope.launch {
+            recipeDao.updateStepInstruction(stepId, instruction)
         }
     }
 
-    fun deleteStep(recipeId: Int, stepId: Long) {
-        stepsByRecipe[recipeId] = getSteps(recipeId).filterNot { step -> step.id == stepId }
+    fun toggleStep(stepId: Long, isDone: Boolean) {
+        viewModelScope.launch {
+            recipeDao.setStepDone(stepId, isDone)
+        }
+    }
+
+    fun deleteStep(stepId: Long) {
+        viewModelScope.launch {
+            recipeDao.deleteStepById(stepId)
+        }
     }
 
     fun resetSteps(recipeId: Int) {
-        stepsByRecipe[recipeId] = getSteps(recipeId).map { step -> step.copy(isDone = false) }
-    }
-
-    fun deleteAllSteps(recipeId: Int) {
-        stepsByRecipe.remove(recipeId)
+        viewModelScope.launch {
+            recipeDao.resetSteps(recipeId)
+        }
     }
 
     private suspend fun insertInitialRecipes() {
@@ -150,6 +170,14 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
                 Ingredient("100 g", "Lardons"),
                 Ingredient("2", "Œufs"),
                 Ingredient("50 g", "Parmesan")
+            ),
+            listOf(
+                "Faire bouillir l'eau dans une grande casserole et saler.",
+                "Cuire les spaghetti 9 minutes en remuant de temps en temps.",
+                "Pendant la cuisson, mélanger les œufs, le parmesan et le poivre.",
+                "Égoutter les pâtes, réserver un peu d'eau de cuisson.",
+                "Verser les œufs sur les pâtes chaudes et remuer jusqu'à ce que la sauce épaississe.",
+                "Servir immédiatement avec du poivre frais."
             )
         )
         recipeDao.insertRecipeWithIngredients(
@@ -163,6 +191,13 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
                 Ingredient("300 g", "Chicken"),
                 Ingredient("200 ml", "Coconut milk"),
                 Ingredient("2 tbsp", "Curry")
+            ),
+            listOf(
+                "Émincer le poulet en dés et le saisir à feu vif.",
+                "Faire revenir les oignons jusqu'à ce qu'ils soient translucides.",
+                "Ajouter les épices et faire torrifier 1 minute pour libérer les saveurs.",
+                "Verser le lait de coco et laisser mijoter 20 minutes à feu doux.",
+                "Servir avec du riz basmati et du coriander."
             )
         )
         recipeDao.insertRecipeWithIngredients(
@@ -176,6 +211,14 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
                 Ingredient("250 g", "Flour"),
                 Ingredient("150 g", "Tomato sauce"),
                 Ingredient("125 g", "Mozzarella")
+            ),
+            listOf(
+                "Préchauffer le four à 240 degrés avec la pierre à pizza.",
+                "Pétrir la farine, l'eau et la levure pendant 10 minutes puis laisser lever 1 heure.",
+                "Étaler la pâte en disque et piquer à la fourchette.",
+                "Étaler la sauce tomate en laissant le pourtour libre.",
+                "Ajouter la mozzarella puis enfourner 8 à 10 minutes.",
+                "Ajouter le basilic frais à la sortie du four."
             )
         )
     }
