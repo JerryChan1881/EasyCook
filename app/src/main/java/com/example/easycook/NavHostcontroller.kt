@@ -10,6 +10,7 @@ import androidx.navigation.compose.composable
 import com.example.easycook.ui.screens.AddRecipeScreen
 import com.example.easycook.ui.screens.HomeScreen
 import com.example.easycook.ui.screens.RecipeDetailScreen
+import com.example.easycook.ui.screens.StepByStepScreen
 
 @Composable
 fun NavHostModel(
@@ -54,6 +55,25 @@ fun NavHostModel(
                 navController = navController,
                 stateViewModel = stateViewModel
             )
+        }
+
+        composable("stepByStepScreen/{recipeId}") { backStackEntry ->
+            val recipes by stateViewModel.recipes.collectAsState()
+            val recipeId = backStackEntry.arguments
+                ?.getString("recipeId")
+                ?.toIntOrNull()
+
+            val recipe = recipeId?.let { id ->
+                recipes.find { it.id == id }
+            }
+
+            if (recipe != null) {
+                StepByStepScreen(
+                    recipe = recipe,
+                    navController = navController,
+                    stateViewModel = stateViewModel
+                )
+            }
         }
     }
 }

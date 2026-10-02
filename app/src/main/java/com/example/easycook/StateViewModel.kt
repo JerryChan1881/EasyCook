@@ -1,12 +1,14 @@
 package com.example.easycook
 
 import android.app.Application
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.easycook.data.Ingredient
 import com.example.easycook.data.Recipe
 import com.example.easycook.data.RecipeDatabase
 import com.example.easycook.data.RecipeEntity
+import com.example.easycook.data.RecipeStep
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -99,6 +101,40 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             recipeDao.deleteRecipeById(id)
         }
+    }
+
+    private val stepsByRecipe = mutableStateMapOf<Int, List<RecipeStep>>()
+    private var nextStepId = 0L
+
+    fun getSteps(recipeId: Int): List<RecipeStep> = stepsByRecipe[recipeId] ?: emptyList()
+
+    fun addStep(recipeId: Int, instruction: String = "") {
+        val step = RecipeStep(id = nextStepId++, instruction = instruction)
+        stepsByRecipe[recipeId] = getSteps(recipeId) + step
+    }
+
+    fun updateStepInstruction(recipeId: Int, stepId: Long, instruction: String) {
+        stepsByRecipe[recipeId] = getSteps(recipeId).map { step ->
+            if (step.id == stepId) step.copy(instruction = instruction) else step
+        }
+    }
+
+    fun toggleStep(recipeId: Int, stepId: Long) {
+        stepsByRecipe[recipeId] = getSteps(recipeId).map { step ->
+            if (step.id == stepId) step.copy(isDone = !step.isDone) else step
+        }
+    }
+
+    fun deleteStep(recipeId: Int, stepId: Long) {
+        stepsByRecipe[recipeId] = getSteps(recipeId).filterNot { step -> step.id == stepId }
+    }
+
+    fun resetSteps(recipeId: Int) {
+        stepsByRecipe[recipeId] = getSteps(recipeId).map { step -> step.copy(isDone = false) }
+    }
+
+    fun deleteAllSteps(recipeId: Int) {
+        stepsByRecipe.remove(recipeId)
     }
 
     private suspend fun insertInitialRecipes() {

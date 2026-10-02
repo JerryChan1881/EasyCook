@@ -39,6 +39,10 @@ data class IngredientForm(
     val name: String = ""
 )
 
+data class StepForm(
+    val description: String = ""
+)
+
 @Composable
 fun AddRecipeScreen(
     navController: NavHostController,
@@ -50,6 +54,7 @@ fun AddRecipeScreen(
     var description by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val ingredients = remember { mutableStateListOf(IngredientForm()) }
+    val steps = remember { mutableStateListOf(StepForm()) }
 
     Column(
         modifier = Modifier
@@ -171,6 +176,18 @@ fun AddRecipeScreen(
             Spacer(modifier = Modifier.width(8.dp))
             Text("Ajouter un ingrédient")
         }
+        Button(
+            onClick = { ingredients.add(IngredientForm()) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Ajouter une étape de préparation")
+        }
+
 
         Spacer(modifier = Modifier.height(16.dp))
 

@@ -1,0 +1,331 @@
+package com.example.easycook.ui.screens
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import com.example.easycook.StateViewModel
+import com.example.easycook.data.Recipe
+
+@Composable
+fun StepByStepScreen(
+    recipe: Recipe,
+    navController: NavHostController,
+    stateViewModel: StateViewModel
+) {
+    val steps = stateViewModel.getSteps(recipe.id)
+    val newStepFocusRequester = remember { FocusRequester() }
+
+    var editingStepId by remember { mutableStateOf<Long?>(null) }
+    var instructionDraft by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val startAddingStep = {
+        editingStepId = null
+        errorMessage = null
+        instructionDraft = ""
+        stateViewModel.addStep(recipe.id)
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            IconButton(
+                onClick = {
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Retour"
+                )
+            }
+
+            Text(
+                text = recipe.title,
+                modifier = Modifier.padding(horizontal = 16.dp),
+                style = MaterialTheme.typography.headlineMedium
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Préparation étape par étape",
+                modifier = Modifier.padding(horizontal = 16.dp),
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (steps.isNotEmpty()) {
+                val doneCount = steps.count { it.isDone }
+
+                LinearProgressIndicator(
+                    progress = { doneCount.toFloat() / steps.size },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "$doneCount / ${steps.size} étapes terminées",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    if (doneCount > 0) {
+                        TextButton(onClick = { stateViewModel.resetSteps(recipe.id) }) {
+                            Text("Tout décocher")
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (steps.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Aucune étape pour le moment.",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Utilisez le bouton + pour ajouter votre première instruction de cuisine.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = 96.dp
+                    )
+                ) {
+                    items(steps, key = { it.id }) { step ->
+                        StepCard(
+                            step = step,
+                            isEditing = step.id == editingStepId,
+                            instructionDraft = instructionDraft,
+                            errorMessage = errorMessage,
+                            onInstructionDraftChange = { instructionDraft = it },
+                            onStartEditing = {
+                                editingStepId = step.id
+                                errorMessage = null
+                                instructionDraft = step.instruction
+                            },
+                            onCancelEditing = {
+                                editingStepId = null
+                                errorMessage = null
+                                instructionDraft = ""
+                            },
+                            onConfirmEditing = {
+                                val trimmed = instructionDraft.trim()
+                                if (trimmed.isBlank()) {
+                                    errorMessage = "L'instruction ne peut pas être vide."
+                                } else {
+                                    stateViewModel.updateStepInstruction(
+                                        recipeId = recipe.id,
+                                        stepId = step.id,
+                                        instruction = trimmed
+                                    )
+                                    editingStepId = null
+                                    errorMessage = null
+                                    instructionDraft = ""
+                                }
+                            },
+                            onToggleDone = { stateViewModel.toggleStep(recipe.id, step.id) },
+                            onDelete = {
+                                if (editingStepId == step.id) {
+                                    editingStepId = null
+                                    errorMessage = null
+                                    instructionDraft = ""
+                                }
+                                stateViewModel.deleteStep(recipe.id, step.id)
+                            },
+                            newStepFocusRequester = newStepFocusRequester
+                        )
+                    }
+                }
+            }
+        }
+
+        FloatingActionButton(
+            onClick = { startAddingStep() },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Ajouter une étape"
+            )
+        }
+    }
+}
+
+@Composable
+private fun StepCard(
+    step: com.example.easycook.data.RecipeStep,
+    isEditing: Boolean,
+    instructionDraft: String,
+    errorMessage: String?,
+    onInstructionDraftChange: (String) -> Unit,
+    onStartEditing: () -> Unit,
+    onCancelEditing: () -> Unit,
+    onConfirmEditing: () -> Unit,
+    onToggleDone: () -> Unit,
+    onDelete: () -> Unit,
+    newStepFocusRequester: FocusRequester
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = step.isDone,
+                    onCheckedChange = { onToggleDone() }
+                )
+
+                if (isEditing) {
+                    OutlinedTextField(
+                        value = instructionDraft,
+                        onValueChange = { onInstructionDraftChange(it) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .focusRequester(newStepFocusRequester),
+                        label = { Text("Instruction") },
+                        placeholder = { Text("Ex. Bouillir l'eau à 45 degrés") },
+                        singleLine = false,
+                        maxLines = 3
+                    )
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    IconButton(onClick = { onConfirmEditing() }) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Valider l'instruction",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                } else {
+                    Text(
+                        text = step.instruction,
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyLarge,
+                        textDecoration = if (step.isDone) {
+                            androidx.compose.ui.text.style.TextDecoration.LineThrough
+                        } else {
+                            null
+                        },
+                        color = if (step.isDone) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
+                    )
+
+                    IconButton(onClick = { onStartEditing() }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Modifier l'étape"
+                        )
+                    }
+                }
+
+                IconButton(onClick = { onDelete() }) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Supprimer l'étape",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            if (isEditing) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (errorMessage != null) {
+                        Text(
+                            text = errorMessage,
+                            modifier = Modifier.weight(1f),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+
+                    TextButton(onClick = { onCancelEditing() }) {
+                        Text("Annuler")
+                    }
+                }
+            }
+        }
+    }
+}
