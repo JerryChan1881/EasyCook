@@ -5,8 +5,8 @@ Elle permet de créer ses propres recettes, de les consulter et de les suivre é
 Le stockage est local et ne nécessite aucune connexion réseau.
 
 ## Outils et logiciels
-Android Studio
-Claude Opus 5.5
+- Android Studio
+- Claude Opus 5.5
 ## Fonctionnalités
 
 - **Liste des recettes** : toutes les recettes enregistrées, avec leur temps de cuisson, et la suppression après confirmation.
