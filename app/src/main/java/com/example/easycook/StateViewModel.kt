@@ -1,14 +1,16 @@
 package com.example.easycook
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.easycook.data.Ingredient
 import com.example.easycook.data.Recipe
+import com.example.easycook.data.RecipeDao
 import com.example.easycook.data.RecipeDatabase
 import com.example.easycook.data.RecipeEntity
 import com.example.easycook.data.RecipeStep
 import com.example.easycook.data.StepEntity
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,11 +18,17 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class StateViewModel(application: Application) : AndroidViewModel(application) {
+class StateViewModel(
+    private val recipeDao: RecipeDao,
+    coroutineScope: CoroutineScope? = null
+) : ViewModel() {
 
-    private val recipeDao = RecipeDatabase
-        .getInstance(application)
-        .recipeDao()
+    /**
+     * Scope utilisé pour toutes les écritures asynchrones.
+     * Injecté uniquement par les tests (via `backgroundScope`) ; en production
+     * il s'agit du `viewModelScope` lié au cycle de vie de l'écran.
+     */
+    private val scope: CoroutineScope = coroutineScope ?: viewModelScope
 
     val recipes: StateFlow<List<Recipe>> = recipeDao.observeRecipes()
         .map { recipesWithIngredients ->
@@ -41,13 +49,13 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         .stateIn(
-            scope = viewModelScope,
+            scope = scope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList()
         )
 
     init {
-        viewModelScope.launch {
+        scope.launch {
             if (recipeDao.countRecipes() == 0) {
                 insertInitialRecipes()
             }
@@ -63,7 +71,7 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
         steps: List<String>,
         onComplete: () -> Unit
     ) {
-        viewModelScope.launch {
+        scope.launch {
             recipeDao.insertRecipeWithIngredients(
                 recipe = RecipeEntity(
                     title = title,
@@ -88,7 +96,7 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
         steps: List<String>,
         onComplete: () -> Unit
     ) {
-        viewModelScope.launch {
+        scope.launch {
             recipeDao.updateRecipeWithIngredients(
                 id = id,
                 title = title,
@@ -103,7 +111,7 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteRecipe(id: Int) {
-        viewModelScope.launch {
+        scope.launch {
             recipeDao.deleteRecipeById(id)
         }
     }
@@ -121,7 +129,7 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
             }
 
     fun addStep(recipeId: Int, instruction: String, onInserted: (Long) -> Unit) {
-        viewModelScope.launch {
+        scope.launch {
             val newStepId = recipeDao.insertStep(
                 StepEntity(
                     recipeId = recipeId,
@@ -134,25 +142,25 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updateStepInstruction(stepId: Long, instruction: String) {
-        viewModelScope.launch {
+        scope.launch {
             recipeDao.updateStepInstruction(stepId, instruction)
         }
     }
 
     fun toggleStep(stepId: Long, isDone: Boolean) {
-        viewModelScope.launch {
+        scope.launch {
             recipeDao.setStepDone(stepId, isDone)
         }
     }
 
     fun deleteStep(stepId: Long) {
-        viewModelScope.launch {
+        scope.launch {
             recipeDao.deleteStepById(stepId)
         }
     }
 
     fun resetSteps(recipeId: Int) {
-        viewModelScope.launch {
+        scope.launch {
             recipeDao.resetSteps(recipeId)
         }
     }
@@ -220,6 +228,12 @@ class StateViewModel(application: Application) : AndroidViewModel(application) {
                 "Ajouter la mozzarella puis enfourner 8 à 10 minutes.",
                 "Ajouter le basilic frais à la sortie du four."
             )
+        )
+    }
+
+    companion object {
+        fun from(application: Application): StateViewModel = StateViewModel(
+            RecipeDatabase.getInstance(application).recipeDao()
         )
     }
 }

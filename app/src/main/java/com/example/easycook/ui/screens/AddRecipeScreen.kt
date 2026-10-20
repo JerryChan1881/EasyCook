@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.easycook.StateViewModel
 import com.example.easycook.data.Ingredient
+import com.example.easycook.data.RecipeValidator
 
 data class IngredientForm(
     val quantity: String = "",
@@ -234,35 +235,28 @@ fun AddRecipeScreen(
 
         Button(
             onClick = {
-                val parsedCookingTime = cookingTime.toIntOrNull()
-                val validIngredients = ingredients.filter {
-                    it.quantity.isNotBlank() && it.name.isNotBlank()
+                val rawIngredients = ingredients.map {
+                    Ingredient(quantity = it.quantity, name = it.name)
                 }
 
-                when {
-                    title.isBlank() -> errorMessage = "Le nom de la recette est obligatoire."
-                    parsedCookingTime == null || parsedCookingTime <= 0 ->
-                        errorMessage = "Le temps de cuisson doit être un nombre positif."
-                    validIngredients.isEmpty() ->
-                        errorMessage = "Ajoutez au moins un ingrédient complet."
-                    validIngredients.size != ingredients.size ->
-                        errorMessage = "Complétez ou supprimez les ingrédients vides."
-                    else -> {
-                        stateViewModel.addRecipe(
-                            title = title.trim(),
-                            image = image.trim(),
-                            cookingTime = parsedCookingTime,
-                            description = description.trim(),
-                            ingredients = validIngredients.map {
-                                Ingredient(
-                                    quantity = it.quantity.trim(),
-                                    name = it.name.trim()
-                                )
-                            },
-                            steps = steps.map { it.description.trim() }.filter { it.isNotBlank() },
-                            onComplete = { navController.popBackStack() }
-                        )
-                    }
+                val validationError = RecipeValidator.validate(
+                    title = title,
+                    rawCookingTime = cookingTime,
+                    ingredients = rawIngredients
+                )
+
+                if (validationError != null) {
+                    errorMessage = validationError
+                } else {
+                    stateViewModel.addRecipe(
+                        title = title.trim(),
+                        image = image.trim(),
+                        cookingTime = RecipeValidator.parseCookingTime(cookingTime) ?: 0,
+                        description = description.trim(),
+                        ingredients = RecipeValidator.cleanIngredients(rawIngredients),
+                        steps = RecipeValidator.cleanSteps(steps.map { it.description }),
+                        onComplete = { navController.popBackStack() }
+                    )
                 }
             },
             modifier = Modifier.fillMaxWidth()

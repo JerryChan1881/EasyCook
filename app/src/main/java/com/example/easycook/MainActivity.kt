@@ -1,5 +1,6 @@
 package com.example.easycook
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,7 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.rememberNavController
 import com.example.easycook.ui.theme.EasyCookTheme
 
@@ -34,7 +38,12 @@ class MainActivity : ComponentActivity() {
 fun EasyCookApp() {
 
     val navController = rememberNavController()
-    val stateViewModel: StateViewModel = viewModel()
+    val application = LocalContext.current.applicationContext as Application
+    val stateViewModel: StateViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { StateViewModel.from(application) }
+        }
+    )
 
     Scaffold(
         modifier = Modifier.fillMaxSize()
