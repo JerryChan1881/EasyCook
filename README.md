@@ -2,7 +2,11 @@
 
 Application Android de gestion de recettes de cuisine, écrite en Kotlin avec Jetpack Compose.
 Elle permet de créer ses propres recettes, de les consulter et de les suivre étape par étape en cuisinant.
+Le stockage est local et ne nécessite aucune connexion réseau.
 
+## Outils et logiciels
+Android Studio
+Claude Opus 5.5
 ## Fonctionnalités
 
 - **Liste des recettes** : toutes les recettes enregistrées, avec leur temps de cuisson, et la suppression après confirmation.
@@ -86,6 +90,7 @@ Aucun texte affiché n'est écrit en dur dans le code : ils sont tous dans `res/
 Pour traduire l'application, il suffit d'ajouter un dossier `values-<langue>/strings.xml`
 (par exemple `values-en/` pour l'anglais).
 
+
 ## Stack technique
 
 | Domaine        | Bibliothèque                         |
@@ -102,3 +107,5 @@ Pour traduire l'application, il suffit d'ajouter un dossier `values-<langue>/str
 - Afficher les vraies images des recettes à partir de leur URL (le bandeau est pour l'instant une illustration).
 - Brancher la recherche et les favoris (les boutons sont déjà présents sur l'accueil).
 - Ajouter une traduction anglaise.
+- Ajouter une fonction de recherche
+- Ajouter des catégories
