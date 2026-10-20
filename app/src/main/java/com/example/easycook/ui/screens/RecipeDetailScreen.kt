@@ -44,7 +44,7 @@ import androidx.navigation.NavHostController
 import com.example.easycook.R
 import com.example.easycook.Routes
 import com.example.easycook.StateViewModel
-import com.example.easycook.data.Ingredient
+import com.example.easycook.data.IngredientParser
 import com.example.easycook.data.Recipe
 import com.example.easycook.data.RecipeError
 import com.example.easycook.data.RecipeValidator
@@ -67,8 +67,8 @@ fun RecipeDetailScreen(
     var description by remember { mutableStateOf(recipe.description) }
     var errorMessage by remember { mutableStateOf<RecipeError?>(null) }
     val ingredients = remember {
-        mutableStateListOf<IngredientForm>().apply {
-            addAll(recipe.ingredientList.map { IngredientForm(it.quantity, it.name) })
+        mutableStateListOf<String>().apply {
+            addAll(recipe.ingredientList.map(IngredientParser::format))
         }
     }
     val persistedStepsState = stateViewModel.observeSteps(recipe.id).collectAsState(initial = null)
@@ -91,16 +91,14 @@ fun RecipeDetailScreen(
         cookingTime = recipe.cookingTime.toString()
         description = recipe.description
         ingredients.clear()
-        ingredients.addAll(recipe.ingredientList.map { IngredientForm(it.quantity, it.name) })
+        ingredients.addAll(recipe.ingredientList.map(IngredientParser::format))
         steps.clear()
         steps.addAll(persistedSteps.map { it.instruction })
         errorMessage = null
     }
 
     val confirmChanges: () -> Unit = {
-        val rawIngredients = ingredients.map {
-            Ingredient(quantity = it.quantity, name = it.name)
-        }
+        val rawIngredients = ingredients.map(IngredientParser::parse)
 
         val validationError = RecipeValidator.validate(
             title = title,
@@ -206,21 +204,11 @@ fun RecipeDetailScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         OutlinedTextField(
-                            value = ingredient.quantity,
-                            onValueChange = { value ->
-                                ingredients[index] = ingredient.copy(quantity = value)
-                            },
-                            modifier = Modifier.weight(0.8f),
-                            label = { Text(stringResource(R.string.recipe_form_quantity)) },
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = ingredient.name,
-                            onValueChange = { value ->
-                                ingredients[index] = ingredient.copy(name = value)
-                            },
-                            modifier = Modifier.weight(1.2f),
+                            value = ingredient,
+                            onValueChange = { value -> ingredients[index] = value },
+                            modifier = Modifier.weight(1f),
                             label = { Text(stringResource(R.string.recipe_form_ingredient)) },
+                            placeholder = { Text(stringResource(R.string.recipe_form_ingredient_placeholder)) },
                             singleLine = true
                         )
                         IconButton(
@@ -240,7 +228,7 @@ fun RecipeDetailScreen(
                 }
 
                 OutlinedButton(
-                    onClick = { ingredients.add(IngredientForm()) },
+                    onClick = { ingredients.add("") },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
