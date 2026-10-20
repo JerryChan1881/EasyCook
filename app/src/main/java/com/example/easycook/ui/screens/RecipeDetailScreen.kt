@@ -19,7 +19,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,7 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -47,6 +48,10 @@ import com.example.easycook.data.Ingredient
 import com.example.easycook.data.Recipe
 import com.example.easycook.data.RecipeError
 import com.example.easycook.data.RecipeValidator
+import com.example.easycook.ui.composable.CookingTimeChip
+import com.example.easycook.ui.composable.EasyCookFab
+import com.example.easycook.ui.composable.RecipeBanner
+import com.example.easycook.ui.composable.SectionCard
 import com.example.easycook.ui.messageRes
 
 @Composable
@@ -188,7 +193,8 @@ fun RecipeDetailScreen(
 
                 Text(
                     text = stringResource(R.string.recipe_form_ingredients),
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -249,7 +255,8 @@ fun RecipeDetailScreen(
 
                 Text(
                     text = stringResource(R.string.recipe_form_steps),
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -308,84 +315,103 @@ fun RecipeDetailScreen(
                     Text(stringResource(R.string.recipe_form_cancel_changes))
                 }
             } else {
-                Text(
-                    text = recipe.title,
-                    style = MaterialTheme.typography.headlineMedium
+                RecipeBanner(
+                    recipeId = recipe.id,
+                    modifier = Modifier.clip(MaterialTheme.shapes.large),
+                    height = 160.dp
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = pluralStringResource(R.plurals.recipe_detail_cooking_time, recipe.cookingTime, recipe.cookingTime),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-
-                if (recipe.description.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Text(
-                        text = stringResource(R.string.recipe_detail_description),
-                        style = MaterialTheme.typography.titleLarge
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = recipe.description,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = stringResource(R.string.recipe_form_ingredients),
-                    style = MaterialTheme.typography.titleLarge
+                    text = recipe.title,
+                    style = MaterialTheme.typography.headlineMedium
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                recipe.ingredientList.forEach { ingredient ->
-                    Text(
-                        text = stringResource(R.string.recipe_detail_ingredient_line, ingredient.quantity, ingredient.name),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                CookingTimeChip(minutes = recipe.cookingTime)
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                if (recipe.description.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    SectionCard {
+                        Text(
+                            text = stringResource(R.string.recipe_detail_description),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = recipe.description,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
 
-                if (persistedSteps.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
+                SectionCard {
                     Text(
-                        text = stringResource(R.string.recipe_detail_preparation),
-                        style = MaterialTheme.typography.titleLarge
+                        text = stringResource(R.string.recipe_form_ingredients),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    persistedSteps.forEachIndexed { index, step ->
-                        Row(
-                            verticalAlignment = Alignment.Top,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.step_number, index + 1),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = step.instruction,
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                    recipe.ingredientList.forEach { ingredient ->
+                        Text(
+                            text = stringResource(R.string.recipe_detail_ingredient_line, ingredient.quantity, ingredient.name),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+
+                if (persistedSteps.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    SectionCard {
+                        Text(
+                            text = stringResource(R.string.recipe_detail_preparation),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        persistedSteps.forEachIndexed { index, step ->
+                            Row(
+                                verticalAlignment = Alignment.Top,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.step_number, index + 1),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = step.instruction,
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                OutlinedButton(
+                Button(
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary,
+                        contentColor = MaterialTheme.colorScheme.onTertiary
+                    ),
                     onClick = { navController.navigate(Routes.stepByStep(recipe.id)) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -410,7 +436,7 @@ fun RecipeDetailScreen(
             Spacer(modifier = Modifier.height(88.dp))
         }
 
-        FloatingActionButton(
+        EasyCookFab(
             onClick = {
                 if (isEditing) {
                     confirmChanges()
@@ -419,18 +445,15 @@ fun RecipeDetailScreen(
                     isEditing = true
                 }
             },
+            icon = if (isEditing) Icons.Default.Check else Icons.Default.Edit,
+            contentDescription = if (isEditing) {
+                stringResource(R.string.recipe_detail_confirm_changes)
+            } else {
+                stringResource(R.string.recipe_detail_edit)
+            },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
-        ) {
-            Icon(
-                imageVector = if (isEditing) Icons.Default.Check else Icons.Default.Edit,
-                contentDescription = if (isEditing) {
-                    stringResource(R.string.recipe_detail_confirm_changes)
-                } else {
-                    stringResource(R.string.recipe_detail_edit)
-                }
-            )
-        }
+        )
     }
 }

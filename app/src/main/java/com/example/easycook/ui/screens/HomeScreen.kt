@@ -10,18 +10,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,12 +33,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.easycook.R
 import com.example.easycook.Routes
 import com.example.easycook.StateViewModel
 import com.example.easycook.data.Recipe
+import com.example.easycook.ui.composable.EasyCookFab
 import com.example.easycook.ui.composable.RecipeCard
 
 @Composable
@@ -64,7 +63,8 @@ fun HomeScreen(
             ) {
                 Text(
                     text = stringResource(R.string.home_title),
-                    style = MaterialTheme.typography.headlineMedium
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 IconButton(onClick = {}) {
@@ -78,54 +78,55 @@ fun HomeScreen(
             Text(
                 text = stringResource(R.string.home_subtitle),
                 modifier = Modifier.padding(horizontal = 16.dp),
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 88.dp)
-            ) {
-                items(recipes) { recipe ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RecipeCard(
-                            recipe = recipe,
-                            onClick = {
-                                navController.navigate(Routes.recipeDetail(recipe.id))
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        IconButton(onClick = { recipeToDelete = recipe }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = stringResource(R.string.home_delete_recipe),
-                                tint = MaterialTheme.colorScheme.error
+            if (recipes.isEmpty()) {
+                EmptyRecipes(modifier = Modifier.fillMaxSize())
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 88.dp)
+                ) {
+                    items(recipes) { recipe ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RecipeCard(
+                                recipe = recipe,
+                                onClick = {
+                                    navController.navigate(Routes.recipeDetail(recipe.id))
+                                },
+                                modifier = Modifier.weight(1f)
                             )
+
+                            IconButton(onClick = { recipeToDelete = recipe }) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = stringResource(R.string.home_delete_recipe),
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        FloatingActionButton(
+        EasyCookFab(
             onClick = { navController.navigate(Routes.ADD_RECIPE) },
+            icon = Icons.Default.Add,
+            contentDescription = stringResource(R.string.home_add_recipe),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = stringResource(R.string.home_add_recipe)
-            )
-        }
-
+        )
 
         recipeToDelete?.let { recipe ->
             AlertDialog(
@@ -161,5 +162,38 @@ fun HomeScreen(
                 }
             )
         }
+    }
+}
+
+@Composable
+private fun EmptyRecipes(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.padding(horizontal = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.RestaurantMenu,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = stringResource(R.string.home_empty_title),
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = stringResource(R.string.home_empty_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
     }
 }

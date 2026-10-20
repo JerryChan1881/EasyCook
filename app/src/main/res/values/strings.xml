@@ -12,6 +12,8 @@
     <string name="home_subtitle">Que voulez-vous cuisiner ?</string>
     <string name="home_add_recipe">Ajouter une recette</string>
     <string name="home_delete_recipe">Supprimer la recette</string>
+    <string name="home_empty_title">Aucune recette pour le moment</string>
+    <string name="home_empty_hint">Utilisez le bouton + pour ajouter votre première recette.</string>
     <string name="home_delete_recipe_confirm">Voulez-vous vraiment supprimer « %1$s » ? Cette action est définitive.</string>
 
     <!-- Carte de recette -->
@@ -46,10 +48,6 @@
     <string name="step_confirm_instruction">Valider l\'instruction</string>
 
     <!-- Détail de recette -->
-    <plurals name="recipe_detail_cooking_time">
-        <item quantity="one">%1$d minute</item>
-        <item quantity="other">%1$d minutes</item>
-    </plurals>
     <string name="recipe_detail_description">Description</string>
     <string name="recipe_detail_ingredient_line">%1$s - %2$s</string>
     <string name="recipe_detail_preparation">Préparation</string>

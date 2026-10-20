@@ -1,12 +1,12 @@
 package com.example.easycook.ui.composable
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
@@ -32,16 +32,18 @@ fun RecipeCard(
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary
-        )
-
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
+        RecipeBanner(recipeId = recipe.id)
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(start = 12.dp, top = 8.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -50,18 +52,16 @@ fun RecipeCard(
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                Text(
-                    text = stringResource(R.string.recipe_card_cooking_time, recipe.cookingTime),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                CookingTimeChip(minutes = recipe.cookingTime)
             }
 
             IconButton(onClick = {}) {
                 Icon(
                     imageVector = Icons.Default.FavoriteBorder,
-                    contentDescription = stringResource(R.string.recipe_card_add_favorite)
+                    contentDescription = stringResource(R.string.recipe_card_add_favorite),
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }

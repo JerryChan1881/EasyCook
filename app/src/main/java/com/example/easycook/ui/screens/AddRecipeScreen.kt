@@ -16,9 +16,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -76,7 +78,8 @@ fun AddRecipeScreen(
             }
             Text(
                 text = stringResource(R.string.add_recipe_title),
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.primary
             )
         }
 
@@ -125,7 +128,8 @@ fun AddRecipeScreen(
 
         Text(
             text = stringResource(R.string.recipe_form_ingredients),
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -170,7 +174,7 @@ fun AddRecipeScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        Button(
+        OutlinedButton(
             onClick = { ingredients.add(IngredientForm()) },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -186,7 +190,8 @@ fun AddRecipeScreen(
 
         Text(
             text = stringResource(R.string.recipe_form_steps_optional),
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -223,7 +228,7 @@ fun AddRecipeScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        Button(
+        OutlinedButton(
             onClick = { steps.add(StepForm()) },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -238,6 +243,10 @@ fun AddRecipeScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.tertiary,
+                contentColor = MaterialTheme.colorScheme.onTertiary
+            ),
             onClick = {
                 val rawIngredients = ingredients.map {
                     Ingredient(quantity = it.quantity, name = it.name)
