@@ -81,9 +81,6 @@ interface RecipeDao {
     @Query("SELECT * FROM recipes ORDER BY id")
     fun observeRecipes(): Flow<List<RecipeWithIngredients>>
 
-    @Query("SELECT COUNT(*) FROM recipes")
-    suspend fun countRecipes(): Int
-
     @Query("DELETE FROM recipes WHERE id = :id")
     suspend fun deleteRecipeById(id: Int)
 

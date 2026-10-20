@@ -54,14 +54,6 @@ class StateViewModel(
             initialValue = emptyList()
         )
 
-    init {
-        scope.launch {
-            if (recipeDao.countRecipes() == 0) {
-                insertInitialRecipes()
-            }
-        }
-    }
-
     fun addRecipe(
         title: String,
         image: String,
@@ -163,72 +155,6 @@ class StateViewModel(
         scope.launch {
             recipeDao.resetSteps(recipeId)
         }
-    }
-
-    private suspend fun insertInitialRecipes() {
-        recipeDao.insertRecipeWithIngredients(
-            RecipeEntity(
-                title = "Spaghetti Carbonara",
-                image = "",
-                cookingTime = 30,
-                description = "Une recette romaine simple et crémeuse, sans crème : les œufs et le parmesan fondent avec les pâtes grâce à l'eau de cuisson."
-            ),
-            listOf(
-                Ingredient("200 g", "Spaghetti"),
-                Ingredient("100 g", "Lardons"),
-                Ingredient("2", "Œufs"),
-                Ingredient("50 g", "Parmesan")
-            ),
-            listOf(
-                "Faire bouillir l'eau dans une grande casserole et saler.",
-                "Cuire les spaghetti 9 minutes en remuant de temps en temps.",
-                "Pendant la cuisson, mélanger les œufs, le parmesan et le poivre.",
-                "Égoutter les pâtes, réserver un peu d'eau de cuisson.",
-                "Verser les œufs sur les pâtes chaudes et remuer jusqu'à ce que la sauce épaississe.",
-                "Servir immédiatement avec du poivre frais."
-            )
-        )
-        recipeDao.insertRecipeWithIngredients(
-            RecipeEntity(
-                title = "Chicken Curry",
-                image = "",
-                cookingTime = 45,
-                description = "Un curry de poulet doux et parfumé, parfait avec du riz basmati. mijotez les épices avec le lait de coco pour libérer les saveurs."
-            ),
-            listOf(
-                Ingredient("300 g", "Chicken"),
-                Ingredient("200 ml", "Coconut milk"),
-                Ingredient("2 tbsp", "Curry")
-            ),
-            listOf(
-                "Émincer le poulet en dés et le saisir à feu vif.",
-                "Faire revenir les oignons jusqu'à ce qu'ils soient translucides.",
-                "Ajouter les épices et faire torrifier 1 minute pour libérer les saveurs.",
-                "Verser le lait de coco et laisser mijoter 20 minutes à feu doux.",
-                "Servir avec du riz basmati et du coriander."
-            )
-        )
-        recipeDao.insertRecipeWithIngredients(
-            RecipeEntity(
-                title = "Pizza Margherita",
-                image = "",
-                cookingTime = 40,
-                description = "La pizza classique napolitaine : pâte fine, tomate, mozzarella et basilic frais. Cuisson à feu vif pour une pâte croustillante."
-            ),
-            listOf(
-                Ingredient("250 g", "Flour"),
-                Ingredient("150 g", "Tomato sauce"),
-                Ingredient("125 g", "Mozzarella")
-            ),
-            listOf(
-                "Préchauffer le four à 240 degrés avec la pierre à pizza.",
-                "Pétrir la farine, l'eau et la levure pendant 10 minutes puis laisser lever 1 heure.",
-                "Étaler la pâte en disque et piquer à la fourchette.",
-                "Étaler la sauce tomate en laissant le pourtour libre.",
-                "Ajouter la mozzarella puis enfourner 8 à 10 minutes.",
-                "Ajouter le basilic frais à la sortie du four."
-            )
-        )
     }
 
     companion object {

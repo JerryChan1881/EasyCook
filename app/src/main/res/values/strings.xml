@@ -1,3 +1,76 @@
 <resources>
     <string name="app_name">EasyCook</string>
+
+    <!-- Actions communes -->
+    <string name="action_back">Retour</string>
+    <string name="action_cancel">Annuler</string>
+    <string name="action_delete">Supprimer</string>
+
+    <!-- Accueil -->
+    <string name="home_title">EasyCook</string>
+    <string name="home_search">Rechercher</string>
+    <string name="home_subtitle">Que voulez-vous cuisiner ?</string>
+    <string name="home_add_recipe">Ajouter une recette</string>
+    <string name="home_delete_recipe">Supprimer la recette</string>
+    <string name="home_delete_recipe_confirm">Voulez-vous vraiment supprimer « %1$s » ? Cette action est définitive.</string>
+
+    <!-- Carte de recette -->
+    <string name="recipe_card_cooking_time">%1$d min</string>
+    <string name="recipe_card_add_favorite">Ajouter aux favoris</string>
+
+    <!-- Formulaire de recette (création et modification) -->
+    <string name="add_recipe_title">Nouvelle recette</string>
+    <string name="recipe_form_name">Nom de la recette</string>
+    <string name="recipe_form_image">Image (URL)</string>
+    <string name="recipe_form_cooking_time">Temps de cuisson (minutes)</string>
+    <string name="recipe_form_description">Description (facultatif)</string>
+    <string name="recipe_form_description_placeholder">Décrivez la recette en détail : étapes, astuces, accompagnements…</string>
+    <string name="recipe_form_ingredients">Ingrédients</string>
+    <string name="recipe_form_quantity">Quantité</string>
+    <string name="recipe_form_ingredient">Ingrédient</string>
+    <string name="recipe_form_delete_ingredient">Supprimer l\'ingrédient</string>
+    <string name="recipe_form_add_ingredient">Ajouter un ingrédient</string>
+    <string name="recipe_form_steps_optional">Étapes de préparation (facultatif)</string>
+    <string name="recipe_form_steps">Étapes de préparation</string>
+    <string name="recipe_form_add_step">Ajouter une étape de préparation</string>
+    <string name="recipe_form_save">Enregistrer la recette</string>
+    <string name="recipe_form_cancel_changes">Annuler les modifications</string>
+
+    <!-- Étapes -->
+    <string name="step_number">%1$d.</string>
+    <string name="step_instruction">Instruction</string>
+    <string name="step_instruction_placeholder">Ex. Bouillir l\'eau à 45 degrés</string>
+    <string name="step_delete">Supprimer l\'étape</string>
+    <string name="step_edit">Modifier l\'étape</string>
+    <string name="step_add">Ajouter une étape</string>
+    <string name="step_confirm_instruction">Valider l\'instruction</string>
+
+    <!-- Détail de recette -->
+    <plurals name="recipe_detail_cooking_time">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
+    <string name="recipe_detail_description">Description</string>
+    <string name="recipe_detail_ingredient_line">%1$s - %2$s</string>
+    <string name="recipe_detail_preparation">Préparation</string>
+    <string name="recipe_detail_follow_steps">Suivre la recette étape par étape</string>
+    <string name="recipe_detail_edit">Modifier la recette</string>
+    <string name="recipe_detail_confirm_changes">Confirmer les modifications</string>
+
+    <!-- Étape par étape -->
+    <string name="step_by_step_title">Préparation étape par étape</string>
+    <plurals name="step_by_step_progress">
+        <item quantity="one">%1$d / %2$d étape terminée</item>
+        <item quantity="other">%1$d / %2$d étapes terminées</item>
+    </plurals>
+    <string name="step_by_step_uncheck_all">Tout décocher</string>
+    <string name="step_by_step_empty_title">Aucune étape pour le moment.</string>
+    <string name="step_by_step_empty_hint">Utilisez le bouton + pour ajouter votre première instruction de cuisine.</string>
+
+    <!-- Erreurs de validation -->
+    <string name="error_title_required">Le nom de la recette est obligatoire.</string>
+    <string name="error_cooking_time_invalid">Le temps de cuisson doit être un nombre positif.</string>
+    <string name="error_no_complete_ingredient">Ajoutez au moins un ingrédient complet.</string>
+    <string name="error_incomplete_ingredients">Complétez ou supprimez les ingrédients vides.</string>
+    <string name="error_instruction_empty">L\'instruction ne peut pas être vide.</string>
 </resources>

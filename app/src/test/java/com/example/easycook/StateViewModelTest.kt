@@ -23,7 +23,7 @@ import org.junit.Test
 /**
  * Tests du [StateViewModel].
  *
- * Trois precautions rendent ces tests deterministes :
+ * Deux precautions rendent ces tests deterministes :
  *
  * 1. Le ViewModel recoit un scope de test independant partageant le scheduler
  *    du test (et non `viewModelScope` : ce dernier utilise `Dispatchers.Main`
@@ -33,10 +33,6 @@ import org.junit.Test
  * 2. `advanceUntilIdle()` est appele apres chaque action : les methodes du
  *    ViewModel lancent des coroutines, l'ecriture n'a donc pas eu lieu au
  *    moment de l'assertion tant que le temps virtuel n'a pas avance.
- *
- * 3. Le DAO contient toujours au moins une recette. Sinon le bloc `init` du
- *    ViewModel detecte une base vide et insere les 3 recettes d'exemple, ce
- *    qui polluerait les tests verifies sur les etapes.
  *
  * Note : `recipes` est un `StateFlow` partage avec une valeur initiale vide.
  * Il se lit donc avec `first { ... }` : sans predicat, on recupererait la
@@ -58,7 +54,7 @@ class StateViewModelTest {
         CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
             .also { testScopes += it }
 
-    /** Recette de base : empeche l'insertion automatique des recettes d'exemple. */
+    /** DAO contenant une recette de base (id = 1) sur laquelle portent les tests. */
     private fun daoWithRecipe(
         recipe: RecipeEntity = RecipeEntity(id = 1, title = "Recette existante", image = "", cookingTime = 10),
         ingredients: List<IngredientEntity> = emptyList(),
@@ -141,26 +137,19 @@ class StateViewModelTest {
     }
 
     @Test
-    fun `les recettes d exemple sont inserees quand la base est vide`() = runTest {
-        val viewModel = StateViewModel(FakeRecipeDao(), newTestScope())
+    fun `aucune recette n est inseree automatiquement quand la base est vide`() = runTest {
+        val dao = FakeRecipeDao()
+        val viewModel = StateViewModel(dao, newTestScope())
+        val receivedSizes = mutableListOf<Int>()
+        val job = newTestScope().launch {
+            viewModel.recipes.collect { receivedSizes += it.size }
+        }
 
         advanceUntilIdle()
-        val recipes = viewModel.recipes.first { it.isNotEmpty() }
+        job.cancel()
 
-        assertEquals(3, recipes.size)
+        assertTrue(receivedSizes.all { it == 0 })
     }
-
-    @Test
-    fun `les recettes d exemple ne sont pas inserees si la base contient deja une recette`() =
-        runTest {
-            val viewModel = StateViewModel(daoWithRecipe(), newTestScope())
-
-            advanceUntilIdle()
-            val recipes = viewModel.recipes.first { it.isNotEmpty() }
-
-            assertEquals(1, recipes.size)
-            assertEquals("Recette existante", recipes.single().title)
-        }
 
     // --- addRecipe ---
 

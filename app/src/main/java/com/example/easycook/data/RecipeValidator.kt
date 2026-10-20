@@ -5,13 +5,17 @@ package com.example.easycook.data
  *
  * Cette classe ne contient aucune dépendance Android : elle peut donc être
  * testée directement sur la JVM, sans émulateur ni double de test.
+ * Les erreurs sont donc renvoyées sous forme de [RecipeError] ; c'est l'UI
+ * qui les traduit en texte via les ressources.
  */
-object RecipeValidator {
+enum class RecipeError {
+    TITLE_REQUIRED,
+    COOKING_TIME_INVALID,
+    NO_COMPLETE_INGREDIENT,
+    INCOMPLETE_INGREDIENTS
+}
 
-    const val TITLE_REQUIRED = "Le nom de la recette est obligatoire."
-    const val COOKING_TIME_INVALID = "Le temps de cuisson doit être un nombre positif."
-    const val NO_COMPLETE_INGREDIENT = "Ajoutez au moins un ingrédient complet."
-    const val INCOMPLETE_INGREDIENTS = "Complétez ou supprimez les ingrédients vides."
+object RecipeValidator {
 
     /**
      * Convertit la saisie du temps de cuisson en entier.
@@ -48,7 +52,7 @@ object RecipeValidator {
     /**
      * Valide les champs d'une recette en création ou en modification.
      *
-     * Retourne le message d'erreur à afficher, ou null si tout est valide.
+     * Retourne l'erreur rencontrée, ou null si tout est valide.
      * Les règles sont évaluées dans l'ordre d'importance, la première
      * violation rencontrée l'emporte.
      */
@@ -56,23 +60,23 @@ object RecipeValidator {
         title: String,
         rawCookingTime: String,
         ingredients: List<Ingredient>
-    ): String? {
+    ): RecipeError? {
         if (title.isBlank()) {
-            return TITLE_REQUIRED
+            return RecipeError.TITLE_REQUIRED
         }
 
         if (parseCookingTime(rawCookingTime) == null) {
-            return COOKING_TIME_INVALID
+            return RecipeError.COOKING_TIME_INVALID
         }
 
         val completeIngredients = cleanIngredients(ingredients)
 
         if (completeIngredients.isEmpty()) {
-            return NO_COMPLETE_INGREDIENT
+            return RecipeError.NO_COMPLETE_INGREDIENT
         }
 
         if (completeIngredients.size != ingredients.size) {
-            return INCOMPLETE_INGREDIENTS
+            return RecipeError.INCOMPLETE_INGREDIENTS
         }
 
         return null

@@ -20,21 +20,20 @@ fun NavHostModel(
 ) {
     NavHost(
         navController = navController,
-        startDestination = "homeScreen",
+        startDestination = Routes.HOME,
         modifier = modifier
     ) {
-        composable("homeScreen") {
-            println("HOME SCREEN")
+        composable(Routes.HOME) {
             HomeScreen(
                 navController = navController,
                 stateViewModel = stateViewModel
             )
         }
 
-        composable("recipeDetailScreen/{recipeId}") { backStackEntry ->
+        composable(Routes.RECIPE_DETAIL) { backStackEntry ->
             val recipes by stateViewModel.recipes.collectAsState()
             val recipeId = backStackEntry.arguments
-                ?.getString("recipeId")
+                ?.getString(Routes.ARG_RECIPE_ID)
                 ?.toIntOrNull()
 
             val recipe = recipeId?.let { id ->
@@ -50,17 +49,17 @@ fun NavHostModel(
             }
         }
 
-        composable("addRecipeScreen") {
+        composable(Routes.ADD_RECIPE) {
             AddRecipeScreen(
                 navController = navController,
                 stateViewModel = stateViewModel
             )
         }
 
-        composable("stepByStepScreen/{recipeId}") { backStackEntry ->
+        composable(Routes.STEP_BY_STEP) { backStackEntry ->
             val recipes by stateViewModel.recipes.collectAsState()
             val recipeId = backStackEntry.arguments
-                ?.getString("recipeId")
+                ?.getString(Routes.ARG_RECIPE_ID)
                 ?.toIntOrNull()
 
             val recipe = recipeId?.let { id ->

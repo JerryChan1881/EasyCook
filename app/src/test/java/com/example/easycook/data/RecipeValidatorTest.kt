@@ -154,7 +154,7 @@ class RecipeValidatorTest {
             ingredients = validIngredients
         )
 
-        assertEquals(RecipeValidator.TITLE_REQUIRED, error)
+        assertEquals(RecipeError.TITLE_REQUIRED, error)
     }
 
     @Test
@@ -165,7 +165,7 @@ class RecipeValidatorTest {
             ingredients = validIngredients
         )
 
-        assertEquals(RecipeValidator.COOKING_TIME_INVALID, error)
+        assertEquals(RecipeError.COOKING_TIME_INVALID, error)
     }
 
     @Test
@@ -176,7 +176,7 @@ class RecipeValidatorTest {
             ingredients = listOf(Ingredient("", ""))
         )
 
-        assertEquals(RecipeValidator.NO_COMPLETE_INGREDIENT, error)
+        assertEquals(RecipeError.NO_COMPLETE_INGREDIENT, error)
     }
 
     @Test
@@ -187,7 +187,7 @@ class RecipeValidatorTest {
             ingredients = listOf(Ingredient("250 g", ""), Ingredient("125 g", "Mozzarella"))
         )
 
-        assertEquals(RecipeValidator.INCOMPLETE_INGREDIENTS, error)
+        assertEquals(RecipeError.INCOMPLETE_INGREDIENTS, error)
     }
 
     @Test
@@ -198,7 +198,7 @@ class RecipeValidatorTest {
             ingredients = validIngredients
         )
 
-        assertEquals(RecipeValidator.TITLE_REQUIRED, error)
+        assertEquals(RecipeError.TITLE_REQUIRED, error)
     }
 
     @Test
@@ -209,7 +209,7 @@ class RecipeValidatorTest {
             ingredients = validIngredients
         )
 
-        assertEquals(RecipeValidator.TITLE_REQUIRED, error)
+        assertEquals(RecipeError.TITLE_REQUIRED, error)
     }
 
     @Test

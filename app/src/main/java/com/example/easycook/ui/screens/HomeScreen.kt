@@ -35,8 +35,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.easycook.R
+import com.example.easycook.Routes
 import com.example.easycook.StateViewModel
 import com.example.easycook.data.Recipe
 import com.example.easycook.ui.composable.RecipeCard
@@ -60,20 +63,20 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "EasyCook",
+                    text = stringResource(R.string.home_title),
                     style = MaterialTheme.typography.headlineMedium
                 )
 
                 IconButton(onClick = {}) {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Search"
+                        contentDescription = stringResource(R.string.home_search)
                     )
                 }
             }
 
             Text(
-                text = "What do you want to cook?",
+                text = stringResource(R.string.home_subtitle),
                 modifier = Modifier.padding(horizontal = 16.dp),
                 style = MaterialTheme.typography.titleLarge
             )
@@ -94,7 +97,7 @@ fun HomeScreen(
                         RecipeCard(
                             recipe = recipe,
                             onClick = {
-                                navController.navigate("recipeDetailScreen/${recipe.id}")
+                                navController.navigate(Routes.recipeDetail(recipe.id))
                             },
                             modifier = Modifier.weight(1f)
                         )
@@ -102,7 +105,7 @@ fun HomeScreen(
                         IconButton(onClick = { recipeToDelete = recipe }) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Supprimer la recette",
+                                contentDescription = stringResource(R.string.home_delete_recipe),
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -112,14 +115,14 @@ fun HomeScreen(
         }
 
         FloatingActionButton(
-            onClick = { navController.navigate("addRecipeScreen") },
+            onClick = { navController.navigate(Routes.ADD_RECIPE) },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "Ajouter une recette"
+                contentDescription = stringResource(R.string.home_add_recipe)
             )
         }
 
@@ -134,9 +137,9 @@ fun HomeScreen(
                         tint = MaterialTheme.colorScheme.error
                     )
                 },
-                title = { Text("Supprimer la recette") },
+                title = { Text(stringResource(R.string.home_delete_recipe)) },
                 text = {
-                    Text("Voulez-vous vraiment supprimer « ${recipe.title} » ? Cette action est définitive.")
+                    Text(stringResource(R.string.home_delete_recipe_confirm, recipe.title))
                 },
                 confirmButton = {
                     TextButton(
@@ -146,14 +149,14 @@ fun HomeScreen(
                         }
                     ) {
                         Text(
-                            text = "Supprimer",
+                            text = stringResource(R.string.action_delete),
                             color = MaterialTheme.colorScheme.error
                         )
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { recipeToDelete = null }) {
-                        Text("Annuler")
+                        Text(stringResource(R.string.action_cancel))
                     }
                 }
             )

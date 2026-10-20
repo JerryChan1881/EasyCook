@@ -42,8 +42,6 @@ class FakeRecipeDao(
             }
         }
 
-    override suspend fun countRecipes(): Int = recipes.value.size
-
     override suspend fun insertRecipe(recipe: RecipeEntity): Long {
         val assignedId = if (recipe.id == 0) nextRecipeId else recipe.id
         if (recipe.id == 0) {

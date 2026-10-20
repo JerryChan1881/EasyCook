@@ -18,7 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.easycook.R
 import com.example.easycook.data.Recipe
 
 @Composable
@@ -51,7 +53,7 @@ fun RecipeCard(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "${recipe.cookingTime} min",
+                    text = stringResource(R.string.recipe_card_cooking_time, recipe.cookingTime),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -59,7 +61,7 @@ fun RecipeCard(
             IconButton(onClick = {}) {
                 Icon(
                     imageVector = Icons.Default.FavoriteBorder,
-                    contentDescription = "Add to favorites"
+                    contentDescription = stringResource(R.string.recipe_card_add_favorite)
                 )
             }
         }

@@ -1,5 +1,6 @@
 package com.example.easycook.ui.screens
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,8 +42,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.easycook.R
 import com.example.easycook.StateViewModel
 import com.example.easycook.data.Recipe
 import com.example.easycook.data.RecipeStep
@@ -59,7 +63,7 @@ fun StepByStepScreen(
 
     var pendingStepId by remember { mutableStateOf<Long?>(null) }
     var instructionDraft by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<Int?>(null) }
 
     val startAddingStep = {
         errorMessage = null
@@ -72,7 +76,7 @@ fun StepByStepScreen(
     val confirmDraft: () -> Unit = {
         val trimmed = instructionDraft.trim()
         if (trimmed.isBlank()) {
-            errorMessage = "L'instruction ne peut pas être vide."
+            errorMessage = R.string.error_instruction_empty
         } else {
             pendingStepId?.let { stepId ->
                 stateViewModel.updateStepInstruction(stepId, trimmed)
@@ -101,7 +105,7 @@ fun StepByStepScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Retour"
+                    contentDescription = stringResource(R.string.action_back)
                 )
             }
 
@@ -114,7 +118,7 @@ fun StepByStepScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Préparation étape par étape",
+                text = stringResource(R.string.step_by_step_title),
                 modifier = Modifier.padding(horizontal = 16.dp),
                 style = MaterialTheme.typography.titleMedium
             )
@@ -140,14 +144,14 @@ fun StepByStepScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "$doneCount / ${steps.size} étapes terminées",
+                        text = pluralStringResource(R.plurals.step_by_step_progress, steps.size, doneCount, steps.size),
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodyMedium
                     )
 
                     if (doneCount > 0) {
                         TextButton(onClick = { stateViewModel.resetSteps(recipe.id) }) {
-                            Text("Tout décocher")
+                            Text(stringResource(R.string.step_by_step_uncheck_all))
                         }
                     }
                 }
@@ -164,14 +168,14 @@ fun StepByStepScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Aucune étape pour le moment.",
+                        text = stringResource(R.string.step_by_step_empty_title),
                         style = MaterialTheme.typography.titleMedium
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Utilisez le bouton + pour ajouter votre première instruction de cuisine.",
+                        text = stringResource(R.string.step_by_step_empty_hint),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -224,7 +228,7 @@ fun StepByStepScreen(
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "Ajouter une étape"
+                contentDescription = stringResource(R.string.step_add)
             )
         }
     }
@@ -235,7 +239,7 @@ private fun StepCard(
     step: RecipeStep,
     isEditing: Boolean,
     instructionDraft: String,
-    errorMessage: String?,
+    @StringRes errorMessage: Int?,
     onInstructionDraftChange: (String) -> Unit,
     onStartEditing: () -> Unit,
     onConfirmEditing: () -> Unit,
@@ -264,8 +268,8 @@ private fun StepCard(
                         modifier = Modifier
                             .weight(1f)
                             .focusRequester(focusRequester),
-                        label = { Text("Instruction") },
-                        placeholder = { Text("Ex. Bouillir l'eau à 45 degrés") },
+                        label = { Text(stringResource(R.string.step_instruction)) },
+                        placeholder = { Text(stringResource(R.string.step_instruction_placeholder)) },
                         singleLine = false,
                         maxLines = 3
                     )
@@ -275,7 +279,7 @@ private fun StepCard(
                     IconButton(onClick = { onConfirmEditing() }) {
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = "Valider l'instruction",
+                            contentDescription = stringResource(R.string.step_confirm_instruction),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -299,7 +303,7 @@ private fun StepCard(
                     IconButton(onClick = { onStartEditing() }) {
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = "Modifier l'étape"
+                            contentDescription = stringResource(R.string.step_edit)
                         )
                     }
                 }
@@ -307,7 +311,7 @@ private fun StepCard(
                 IconButton(onClick = { onDelete() }) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Supprimer l'étape",
+                        contentDescription = stringResource(R.string.step_delete),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -323,7 +327,7 @@ private fun StepCard(
                 ) {
                     if (errorMessage != null) {
                         Text(
-                            text = errorMessage,
+                            text = stringResource(errorMessage),
                             modifier = Modifier.weight(1f),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
@@ -333,7 +337,7 @@ private fun StepCard(
                     }
 
                     TextButton(onClick = { onCancelEditing() }) {
-                        Text("Annuler")
+                        Text(stringResource(R.string.action_cancel))
                     }
                 }
             }

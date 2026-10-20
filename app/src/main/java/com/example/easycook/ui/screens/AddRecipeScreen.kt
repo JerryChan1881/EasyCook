@@ -29,11 +29,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.easycook.R
 import com.example.easycook.StateViewModel
 import com.example.easycook.data.Ingredient
+import com.example.easycook.data.RecipeError
 import com.example.easycook.data.RecipeValidator
+import com.example.easycook.ui.messageRes
 
 data class IngredientForm(
     val quantity: String = "",
@@ -53,7 +57,7 @@ fun AddRecipeScreen(
     var image by remember { mutableStateOf("") }
     var cookingTime by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<RecipeError?>(null) }
     val ingredients = remember { mutableStateListOf(IngredientForm()) }
     val steps = remember { mutableStateListOf(StepForm()) }
 
@@ -67,11 +71,11 @@ fun AddRecipeScreen(
             IconButton(onClick = { navController.popBackStack() }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Retour"
+                    contentDescription = stringResource(R.string.action_back)
                 )
             }
             Text(
-                text = "Nouvelle recette",
+                text = stringResource(R.string.add_recipe_title),
                 style = MaterialTheme.typography.headlineMedium
             )
         }
@@ -82,7 +86,7 @@ fun AddRecipeScreen(
             value = title,
             onValueChange = { title = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Nom de la recette") },
+            label = { Text(stringResource(R.string.recipe_form_name)) },
             singleLine = true
         )
 
@@ -92,7 +96,7 @@ fun AddRecipeScreen(
             value = image,
             onValueChange = { image = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Image (URL)") },
+            label = { Text(stringResource(R.string.recipe_form_image)) },
             singleLine = true
         )
 
@@ -102,7 +106,7 @@ fun AddRecipeScreen(
             value = cookingTime,
             onValueChange = { cookingTime = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Temps de cuisson (minutes)") },
+            label = { Text(stringResource(R.string.recipe_form_cooking_time)) },
             singleLine = true
         )
 
@@ -112,15 +116,15 @@ fun AddRecipeScreen(
             value = description,
             onValueChange = { description = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Description (facultatif)") },
+            label = { Text(stringResource(R.string.recipe_form_description)) },
             minLines = 4,
-            placeholder = { Text("Décrivez la recette en détail : étapes, astuces, accompagnements...") }
+            placeholder = { Text(stringResource(R.string.recipe_form_description_placeholder)) }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Ingrédients",
+            text = stringResource(R.string.recipe_form_ingredients),
             style = MaterialTheme.typography.titleLarge
         )
 
@@ -138,7 +142,7 @@ fun AddRecipeScreen(
                         ingredients[index] = ingredient.copy(quantity = value)
                     },
                     modifier = Modifier.weight(0.8f),
-                    label = { Text("Quantité") },
+                    label = { Text(stringResource(R.string.recipe_form_quantity)) },
                     singleLine = true
                 )
                 OutlinedTextField(
@@ -147,7 +151,7 @@ fun AddRecipeScreen(
                         ingredients[index] = ingredient.copy(name = value)
                     },
                     modifier = Modifier.weight(1.2f),
-                    label = { Text("Ingrédient") },
+                    label = { Text(stringResource(R.string.recipe_form_ingredient)) },
                     singleLine = true
                 )
                 IconButton(
@@ -159,7 +163,7 @@ fun AddRecipeScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Supprimer l'ingrédient"
+                        contentDescription = stringResource(R.string.recipe_form_delete_ingredient)
                     )
                 }
             }
@@ -175,13 +179,13 @@ fun AddRecipeScreen(
                 contentDescription = null
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Ajouter un ingrédient")
+            Text(stringResource(R.string.recipe_form_add_ingredient))
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Étapes de préparation (facultatif)",
+            text = stringResource(R.string.recipe_form_steps_optional),
             style = MaterialTheme.typography.titleLarge
         )
 
@@ -194,7 +198,7 @@ fun AddRecipeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${index + 1}.",
+                    text = stringResource(R.string.step_number, index + 1),
                     style = MaterialTheme.typography.titleMedium
                 )
                 OutlinedTextField(
@@ -203,8 +207,8 @@ fun AddRecipeScreen(
                         steps[index] = step.copy(description = value)
                     },
                     modifier = Modifier.weight(1f),
-                    label = { Text("Instruction") },
-                    placeholder = { Text("Ex. Bouillir l'eau à 45 degrés") },
+                    label = { Text(stringResource(R.string.step_instruction)) },
+                    placeholder = { Text(stringResource(R.string.step_instruction_placeholder)) },
                     maxLines = 3
                 )
                 IconButton(
@@ -212,7 +216,7 @@ fun AddRecipeScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Supprimer l'étape"
+                        contentDescription = stringResource(R.string.step_delete)
                     )
                 }
             }
@@ -228,7 +232,7 @@ fun AddRecipeScreen(
                 contentDescription = null
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Ajouter une étape de préparation")
+            Text(stringResource(R.string.recipe_form_add_step))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -261,13 +265,13 @@ fun AddRecipeScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Enregistrer la recette")
+            Text(stringResource(R.string.recipe_form_save))
         }
 
         errorMessage?.let { message ->
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = message,
+                text = stringResource(message.messageRes()),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium
             )
