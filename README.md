@@ -9,7 +9,7 @@ Elle permet de créer ses propres recettes, de les consulter et de les suivre é
 - **Création d'une recette** : nom, image (URL), temps de cuisson, description, ingrédients et étapes de préparation (facultatives).
 - **Détail et modification** : consultation complète d'une recette et modification de tous ses champs.
 - **Mode étape par étape** : chaque étape se coche une fois réalisée, avec une barre de progression. On peut aussi ajouter, modifier ou supprimer des étapes directement depuis cet écran.
-- **Validation des saisies** : nom obligatoire, temps de cuisson positif, au moins un ingrédient complet et aucun ingrédient à moitié rempli.
+- **Validation des saisies** : nom obligatoire, temps de cuisson positif et au moins un ingrédient. Chaque ingrédient se saisit en texte libre dans un seul champ (ex. « 200 g de spaghetti ») ; les lignes vides sont ignorées.
 - **Stockage local** : les recettes sont enregistrées sur l'appareil (base Room) et conservées entre deux lancements.
 - **Thème clair et sombre** : la charte graphique EasyCook (orange, vert basilic, fond crème) suit le réglage du téléphone.
 

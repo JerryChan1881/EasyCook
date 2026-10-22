@@ -11,8 +11,7 @@ package com.example.easycook.data
 enum class RecipeError {
     TITLE_REQUIRED,
     COOKING_TIME_INVALID,
-    NO_COMPLETE_INGREDIENT,
-    INCOMPLETE_INGREDIENTS
+    NO_INGREDIENT
 }
 
 object RecipeValidator {
@@ -28,11 +27,12 @@ object RecipeValidator {
 
     /**
      * Retire les lignes d'ingrédients laissées vides et nettoie les espaces.
+     * Le texte d'un ingrédient est libre : seule une ligne entièrement vide est retirée.
      * L'ordre des ingrédients est conservé.
      */
     fun cleanIngredients(ingredients: List<Ingredient>): List<Ingredient> =
         ingredients
-            .filter { it.quantity.isNotBlank() && it.name.isNotBlank() }
+            .filterNot { isBlankIngredient(it) }
             .map { Ingredient(quantity = it.quantity.trim(), name = it.name.trim()) }
 
     /**
@@ -44,7 +44,6 @@ object RecipeValidator {
 
     /**
      * Indique si une ligne d'ingrédient est complètement vide.
-     * Une ligne semi-remplie est considérée comme incomplète, pas vide.
      */
     fun isBlankIngredient(ingredient: Ingredient): Boolean =
         ingredient.quantity.isBlank() && ingredient.name.isBlank()
@@ -69,14 +68,9 @@ object RecipeValidator {
             return RecipeError.COOKING_TIME_INVALID
         }
 
-        val completeIngredients = cleanIngredients(ingredients)
-
-        if (completeIngredients.isEmpty()) {
-            return RecipeError.NO_COMPLETE_INGREDIENT
-        }
-
-        if (completeIngredients.size != ingredients.size) {
-            return RecipeError.INCOMPLETE_INGREDIENTS
+        // Les lignes vides sont ignorées, comme pour les étapes
+        if (cleanIngredients(ingredients).isEmpty()) {
+            return RecipeError.NO_INGREDIENT
         }
 
         return null

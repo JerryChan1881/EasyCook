@@ -32,7 +32,7 @@
     <string name="recipe_form_description_placeholder">Décrivez la recette en détail : étapes, astuces, accompagnements…</string>
     <string name="recipe_form_ingredients">Ingrédients</string>
     <string name="recipe_form_ingredient">Ingrédient</string>
-    <string name="recipe_form_ingredient_placeholder">200 g Spaghetti</string>
+    <string name="recipe_form_ingredient_placeholder">Ex. 200 g de spaghetti</string>
     <string name="recipe_form_delete_ingredient">Supprimer l\'ingrédient</string>
     <string name="recipe_form_add_ingredient">Ajouter un ingrédient</string>
     <string name="recipe_form_steps_optional">Étapes de préparation (facultatif)</string>
@@ -52,7 +52,6 @@
 
     <!-- Détail de recette -->
     <string name="recipe_detail_description">Description</string>
-    <string name="recipe_detail_ingredient_line">%1$s - %2$s</string>
     <string name="recipe_detail_preparation">Préparation</string>
     <string name="recipe_detail_follow_steps">Suivre la recette étape par étape</string>
     <string name="recipe_detail_edit">Modifier la recette</string>
@@ -71,7 +70,6 @@
     <!-- Erreurs de validation -->
     <string name="error_title_required">Le nom de la recette est obligatoire.</string>
     <string name="error_cooking_time_invalid">Le temps de cuisson doit être un nombre positif.</string>
-    <string name="error_no_complete_ingredient">Ajoutez au moins un ingrédient complet.</string>
-    <string name="error_incomplete_ingredients">Chaque ingrédient doit avoir une quantité et un nom (ex. 200 g Spaghetti).</string>
+    <string name="error_no_ingredient">Ajoutez au moins un ingrédient.</string>
     <string name="error_instruction_empty">L\'instruction ne peut pas être vide.</string>
 </resources>

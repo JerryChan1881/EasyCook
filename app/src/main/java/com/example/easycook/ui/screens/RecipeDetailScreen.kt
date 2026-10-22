@@ -352,7 +352,7 @@ fun RecipeDetailScreen(
 
                     recipe.ingredientList.forEach { ingredient ->
                         Text(
-                            text = stringResource(R.string.recipe_detail_ingredient_line, ingredient.quantity, ingredient.name),
+                            text = IngredientParser.format(ingredient),
                             style = MaterialTheme.typography.bodyLarge
                         )
 

@@ -62,20 +62,17 @@ class RecipeValidatorTest {
     }
 
     @Test
-    fun `cleanIngredients ecarte les lignes semi remplies`() {
+    fun `cleanIngredients garde une ligne avec seulement une quantite`() {
         val cleaned = RecipeValidator.cleanIngredients(listOf(Ingredient("200 g", "")))
 
-        assertTrue(cleaned.isEmpty())
+        assertEquals(listOf(Ingredient("200 g", "")), cleaned)
     }
 
     @Test
-    fun `validate detecte une ligne semi remplie grace a la difference de taille`() {
-        val ingredients = listOf(Ingredient("250 g", ""), Ingredient("125 g", "Mozzarella"))
+    fun `cleanIngredients garde une ligne avec seulement un nom`() {
+        val cleaned = RecipeValidator.cleanIngredients(listOf(Ingredient("", "Sel et poivre")))
 
-        // cleanIngredients ne garde que la ligne complete : l'ecart de taille
-        // est le signal utilise par validate pour refuser l'enregistrement.
-        assertEquals(1, RecipeValidator.cleanIngredients(ingredients).size)
-        assertEquals(2, ingredients.size)
+        assertEquals(listOf(Ingredient("", "Sel et poivre")), cleaned)
     }
 
     @Test
@@ -169,25 +166,36 @@ class RecipeValidatorTest {
     }
 
     @Test
-    fun `validate refuse une recette sans aucun ingredient complet`() {
+    fun `validate refuse une recette sans aucun ingredient`() {
         val error = RecipeValidator.validate(
             title = "Pizza",
             rawCookingTime = "30",
             ingredients = listOf(Ingredient("", ""))
         )
 
-        assertEquals(RecipeError.NO_COMPLETE_INGREDIENT, error)
+        assertEquals(RecipeError.NO_INGREDIENT, error)
     }
 
     @Test
-    fun `validate refuse un ingredient a moitié rempli`() {
+    fun `validate accepte un ingredient en texte libre`() {
         val error = RecipeValidator.validate(
             title = "Pizza",
             rawCookingTime = "30",
-            ingredients = listOf(Ingredient("250 g", ""), Ingredient("125 g", "Mozzarella"))
+            ingredients = listOf(Ingredient("250 g", ""), Ingredient("", "Sel, poivre & herbes !"))
         )
 
-        assertEquals(RecipeError.INCOMPLETE_INGREDIENTS, error)
+        assertNull(error)
+    }
+
+    @Test
+    fun `validate ignore les lignes d ingredient vides`() {
+        val error = RecipeValidator.validate(
+            title = "Pizza",
+            rawCookingTime = "30",
+            ingredients = listOf(Ingredient("", ""), Ingredient("125 g", "Mozzarella"), Ingredient(" ", " "))
+        )
+
+        assertNull(error)
     }
 
     @Test
