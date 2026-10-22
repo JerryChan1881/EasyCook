@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
 /**
- * Faux DAO реалиant [RecipeDao] entirely en memoire.
+ * Faux DAO implementant [RecipeDao] entierement en memoire.
  *
  * Objectif : tester [StateViewModel] sans Room, sans Android et sans emulateur.
  * On reproduit le comportement qui compte pour le ViewModel :
@@ -34,12 +34,15 @@ class FakeRecipeDao(
 
     override fun observeRecipes(): Flow<List<RecipeWithIngredients>> =
         recipes.map { recipeList ->
-            recipeList.map { recipe ->
-                RecipeWithIngredients(
-                    recipe = recipe,
-                    ingredients = ingredients.value.filter { it.recipeId == recipe.id }
-                )
-            }
+            recipeList
+                // Meme tri que la requete SQL : favoris d'abord, puis par id
+                .sortedWith(compareByDescending<RecipeEntity> { it.isFavorite }.thenBy { it.id })
+                .map { recipe ->
+                    RecipeWithIngredients(
+                        recipe = recipe,
+                        ingredients = ingredients.value.filter { it.recipeId == recipe.id }
+                    )
+                }
         }
 
     override suspend fun insertRecipe(recipe: RecipeEntity): Long {
@@ -60,6 +63,12 @@ class FakeRecipeDao(
             ingredient.copy(id = assignedId)
         }
         this.ingredients.value = this.ingredients.value + withIds
+    }
+
+    override suspend fun setFavorite(id: Int, isFavorite: Boolean) {
+        recipes.value = recipes.value.map { recipe ->
+            if (recipe.id == id) recipe.copy(isFavorite = isFavorite) else recipe
+        }
     }
 
     override suspend fun deleteRecipeById(id: Int) {

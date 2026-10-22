@@ -44,7 +44,8 @@ data class RecipeEntity(
     val title: String,
     val image: String,
     val cookingTime: Int,
-    val description: String = ""
+    val description: String = "",
+    val isFavorite: Boolean = false
 )
 
 @Entity(
@@ -78,8 +79,12 @@ data class RecipeWithIngredients(
 @Dao
 interface RecipeDao {
     @Transaction
-    @Query("SELECT * FROM recipes ORDER BY id")
+    // Les favoris d'abord, puis l'ordre de création
+    @Query("SELECT * FROM recipes ORDER BY isFavorite DESC, id")
     fun observeRecipes(): Flow<List<RecipeWithIngredients>>
+
+    @Query("UPDATE recipes SET isFavorite = :isFavorite WHERE id = :id")
+    suspend fun setFavorite(id: Int, isFavorite: Boolean)
 
     @Query("DELETE FROM recipes WHERE id = :id")
     suspend fun deleteRecipeById(id: Int)
@@ -196,7 +201,7 @@ interface RecipeDao {
 
 @Database(
     entities = [RecipeEntity::class, IngredientEntity::class, StepEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class RecipeDatabase : RoomDatabase() {
@@ -237,6 +242,12 @@ abstract class RecipeDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE recipes ADD COLUMN isFavorite INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         @Volatile
         private var instance: RecipeDatabase? = null
 
@@ -247,7 +258,7 @@ abstract class RecipeDatabase : RoomDatabase() {
                     RecipeDatabase::class.java,
                     "easycook.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_1_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_1_3, MIGRATION_3_4)
                     .build().also { instance = it }
             }
         }

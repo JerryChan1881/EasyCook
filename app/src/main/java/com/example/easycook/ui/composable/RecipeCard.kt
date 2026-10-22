@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,11 +38,13 @@ import com.example.easycook.data.Recipe
 /**
  * Carte carrée d'une recette, pensée pour une grille de 2 ou 3 colonnes :
  * illustration en haut (avec les actions favori et suppression), titre et temps en bas.
+ * Le cœur est plein quand la recette est en favori.
  */
 @Composable
 fun RecipeCard(
     recipe: Recipe,
     onClick: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -73,10 +76,14 @@ fun RecipeCard(
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 CardActionButton(
-                    icon = Icons.Default.FavoriteBorder,
-                    contentDescription = stringResource(R.string.recipe_card_add_favorite),
+                    icon = if (recipe.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = if (recipe.isFavorite) {
+                        stringResource(R.string.recipe_card_remove_favorite)
+                    } else {
+                        stringResource(R.string.recipe_card_add_favorite)
+                    },
                     tint = MaterialTheme.colorScheme.primary,
-                    onClick = {}
+                    onClick = onToggleFavorite
                 )
                 CardActionButton(
                     icon = Icons.Default.Delete,

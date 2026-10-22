@@ -146,6 +146,9 @@ fun HomeScreen(
                             onClick = {
                                 navController.navigate(Routes.recipeDetail(recipe.id))
                             },
+                            onToggleFavorite = {
+                                stateViewModel.setFavorite(recipe.id, !recipe.isFavorite)
+                            },
                             onDelete = { recipeToDeleteId = recipe.id }
                         )
                     }

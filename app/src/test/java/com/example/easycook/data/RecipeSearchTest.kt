@@ -122,6 +122,26 @@ class RecipeSearchTest {
     }
 
     @Test
+    fun `a score egal un favori passe avant l ordre alphabetique`() {
+        val recipes = listOf(recipe(1, "Tarte aux fraises"), recipe(2, "Tarte salée").copy(isFavorite = true))
+
+        assertEquals(
+            listOf("Tarte salée", "Tarte aux fraises"),
+            RecipeSearch.search(recipes, "tar").map { it.title }
+        )
+    }
+
+    @Test
+    fun `un favori ne passe pas devant une recette plus pertinente`() {
+        val recipes = listOf(recipe(1, "Soupe de pizza").copy(isFavorite = true), recipe(2, "Pizza"))
+
+        assertEquals(
+            listOf("Pizza", "Soupe de pizza"),
+            RecipeSearch.search(recipes, "pizza").map { it.title }
+        )
+    }
+
+    @Test
     fun `une seule lettre ne declenche pas la correspondance par lettres dans l ordre`() {
         // "z" n'est dans aucun titre, ingredient ou description du curry
         assertTrue(RecipeSearch.search(listOf(curry), "z").isEmpty())

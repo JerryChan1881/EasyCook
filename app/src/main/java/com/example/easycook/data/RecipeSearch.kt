@@ -24,7 +24,7 @@ object RecipeSearch {
 
     /**
      * Retourne les recettes correspondant à [query], de la plus pertinente à la moins
-     * pertinente. À score égal, les titres sont triés par ordre alphabétique.
+     * pertinente. À score égal, les favoris passent en premier, puis l'ordre alphabétique.
      * Une recherche vide renvoie toutes les recettes dans leur ordre d'origine.
      */
     fun search(recipes: List<Recipe>, query: String): List<Recipe> {
@@ -38,6 +38,7 @@ object RecipeSearch {
             .filter { (_, score) -> score > 0 }
             .sortedWith(
                 compareByDescending<Pair<Recipe, Int>> { (_, score) -> score }
+                    .thenByDescending { (recipe, _) -> recipe.isFavorite }
                     .thenBy { (recipe, _) -> normalize(recipe.title) }
             )
             .map { (recipe, _) -> recipe }

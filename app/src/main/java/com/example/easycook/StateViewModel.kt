@@ -39,6 +39,7 @@ class StateViewModel(
                     image = recipeWithIngredients.recipe.image,
                     cookingTime = recipeWithIngredients.recipe.cookingTime,
                     description = recipeWithIngredients.recipe.description,
+                    isFavorite = recipeWithIngredients.recipe.isFavorite,
                     ingredientList = recipeWithIngredients.ingredients.map { ingredient ->
                         Ingredient(
                             quantity = ingredient.quantity,
@@ -99,6 +100,12 @@ class StateViewModel(
                 steps = steps
             )
             onComplete()
+        }
+    }
+
+    fun setFavorite(id: Int, isFavorite: Boolean) {
+        scope.launch {
+            recipeDao.setFavorite(id, isFavorite)
         }
     }
 

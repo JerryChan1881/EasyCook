@@ -6,6 +6,8 @@ Elle permet de créer ses propres recettes, de les consulter et de les suivre é
 ## Fonctionnalités
 
 - **Liste des recettes** : grille de cartes (2 colonnes en portrait, 3 en paysage), avec le temps de cuisson et la suppression après confirmation.
+- **Favoris** : le cœur d'une carte met la recette en favori ; les favoris sont affichés en premier.
+- **Recherche** : la loupe de l'accueil filtre les recettes au fil de la saisie (titre, ingrédients, description), en ignorant majuscules et accents, et classe les résultats par pertinence.
 - **Création d'une recette** : nom, image (URL), temps de cuisson, description, ingrédients et étapes de préparation (facultatives).
 - **Détail et modification** : consultation complète d'une recette et modification de tous ses champs.
 - **Mode étape par étape** : chaque étape se coche une fois réalisée, avec une barre de progression. On peut aussi ajouter, modifier ou supprimer des étapes directement depuis cet écran.
@@ -75,11 +77,11 @@ La base `easycook.db` contient trois tables liées par `recipeId`, avec suppress
 
 | Table         | Contenu                                                       |
 | ------------- | ------------------------------------------------------------- |
-| `recipes`     | titre, image, temps de cuisson, description                   |
+| `recipes`     | titre, image, temps de cuisson, description, favori           |
 | `ingredients` | quantité et nom de chaque ingrédient                          |
 | `steps`       | instruction, position dans la recette et état « terminé »     |
 
-Le schéma est en version 3, et les migrations depuis les versions précédentes sont fournies.
+Le schéma est en version 4 (ajout des favoris), et les migrations depuis les versions précédentes sont fournies.
 
 ### Textes et ressources
 
@@ -101,5 +103,4 @@ Pour traduire l'application, il suffit d'ajouter un dossier `values-<langue>/str
 ## Pistes d'évolution
 
 - Afficher les vraies images des recettes à partir de leur URL (le bandeau est pour l'instant une illustration).
-- Brancher la recherche et les favoris (les boutons sont déjà présents sur l'accueil).
 - Ajouter une traduction anglaise.

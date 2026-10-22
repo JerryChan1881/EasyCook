@@ -6,7 +6,8 @@ data class Recipe(
     val image: String,
     val cookingTime: Int,
     val ingredientList: List<Ingredient>,
-    val description: String = ""
+    val description: String = "",
+    val isFavorite: Boolean = false
 ) {
     /** Le temps de cuisson est facultatif : [NO_COOKING_TIME] signifie qu'il n'a pas été renseigné. */
     val hasCookingTime: Boolean

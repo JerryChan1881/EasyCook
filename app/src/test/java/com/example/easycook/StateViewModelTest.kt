@@ -304,6 +304,73 @@ class StateViewModelTest {
         assertTrue(viewModel.observeSteps(recipeId = 1).first().isEmpty())
     }
 
+    // --- Favoris ---
+
+    @Test
+    fun `une nouvelle recette n est pas en favori`() = runTest {
+        val viewModel = StateViewModel(daoWithRecipe(), newTestScope())
+
+        val recipe = viewModel.recipes.first { it.isNotEmpty() }.single()
+
+        assertFalse(recipe.isFavorite)
+    }
+
+    @Test
+    fun `setFavorite met une recette en favori puis la retire`() = runTest {
+        val viewModel = StateViewModel(daoWithRecipe(), newTestScope())
+
+        viewModel.setFavorite(id = 1, isFavorite = true)
+        advanceUntilIdle()
+        assertTrue(viewModel.recipes.first { list -> list.any { it.isFavorite } }.single().isFavorite)
+
+        viewModel.setFavorite(id = 1, isFavorite = false)
+        advanceUntilIdle()
+        assertFalse(viewModel.recipes.first { list -> list.none { it.isFavorite } }.single().isFavorite)
+    }
+
+    @Test
+    fun `les favoris apparaissent en premier`() = runTest {
+        val dao = FakeRecipeDao(
+            initialRecipes = listOf(
+                RecipeEntity(id = 1, title = "A", image = "", cookingTime = 10),
+                RecipeEntity(id = 2, title = "B", image = "", cookingTime = 10),
+                RecipeEntity(id = 3, title = "C", image = "", cookingTime = 10)
+            )
+        )
+        val viewModel = StateViewModel(dao, newTestScope())
+
+        viewModel.setFavorite(id = 3, isFavorite = true)
+        advanceUntilIdle()
+
+        val recipes = viewModel.recipes.first { list -> list.firstOrNull()?.isFavorite == true }
+
+        assertEquals(listOf("C", "A", "B"), recipes.map { it.title })
+    }
+
+    @Test
+    fun `modifier une recette conserve son statut de favori`() = runTest {
+        val dao = daoWithRecipe(
+            recipe = RecipeEntity(id = 1, title = "Recette existante", image = "", cookingTime = 10, isFavorite = true)
+        )
+        val viewModel = StateViewModel(dao, newTestScope())
+
+        viewModel.updateRecipe(
+            id = 1,
+            title = "Titre modifie",
+            image = "",
+            cookingTime = 10,
+            description = "",
+            ingredients = listOf(Ingredient("1", "Pain")),
+            steps = emptyList(),
+            onComplete = {}
+        )
+        advanceUntilIdle()
+
+        val recipe = viewModel.recipes.first { list -> list.any { it.title == "Titre modifie" } }.single()
+
+        assertTrue(recipe.isFavorite)
+    }
+
     // --- deleteRecipe ---
 
     @Test
