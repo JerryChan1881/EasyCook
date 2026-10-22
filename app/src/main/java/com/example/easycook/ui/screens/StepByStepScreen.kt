@@ -36,6 +36,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,9 +63,9 @@ fun StepByStepScreen(
         .collectAsState(initial = emptyList())
     val focusRequester = remember { FocusRequester() }
 
-    var pendingStepId by remember { mutableStateOf<Long?>(null) }
-    var instructionDraft by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<Int?>(null) }
+    var pendingStepId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var instructionDraft by rememberSaveable { mutableStateOf("") }
+    var errorMessage by rememberSaveable { mutableStateOf<Int?>(null) }
 
     val startAddingStep = {
         errorMessage = null

@@ -31,9 +31,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +52,7 @@ import com.example.easycook.ui.composable.EasyCookFab
 import com.example.easycook.ui.composable.RecipeBanner
 import com.example.easycook.ui.composable.SectionCard
 import com.example.easycook.ui.messageRes
+import com.example.easycook.ui.rememberSaveableStringList
 
 @Composable
 fun RecipeDetailScreen(
@@ -60,21 +60,19 @@ fun RecipeDetailScreen(
     navController: NavHostController,
     stateViewModel: StateViewModel
 ) {
-    var isEditing by remember { mutableStateOf(false) }
-    var title by remember { mutableStateOf(recipe.title) }
-    var image by remember { mutableStateOf(recipe.image) }
-    var cookingTime by remember { mutableStateOf(recipe.cookingTime.toString()) }
-    var description by remember { mutableStateOf(recipe.description) }
-    var errorMessage by remember { mutableStateOf<RecipeError?>(null) }
-    val ingredients = remember {
-        mutableStateListOf<String>().apply {
-            addAll(recipe.ingredientList.map(IngredientParser::format))
-        }
+    var isEditing by rememberSaveable { mutableStateOf(false) }
+    var title by rememberSaveable { mutableStateOf(recipe.title) }
+    var image by rememberSaveable { mutableStateOf(recipe.image) }
+    var cookingTime by rememberSaveable { mutableStateOf(recipe.cookingTime.toString()) }
+    var description by rememberSaveable { mutableStateOf(recipe.description) }
+    var errorMessage by rememberSaveable { mutableStateOf<RecipeError?>(null) }
+    val ingredients = rememberSaveableStringList {
+        recipe.ingredientList.map(IngredientParser::format)
     }
     val persistedStepsState = stateViewModel.observeSteps(recipe.id).collectAsState(initial = null)
     val persistedSteps = persistedStepsState.value.orEmpty()
-    val steps = remember { mutableStateListOf<String>() }
-    var stepsLoaded by remember { mutableStateOf(false) }
+    val steps = rememberSaveableStringList { emptyList() }
+    var stepsLoaded by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(persistedStepsState.value) {
         val loadedSteps = persistedStepsState.value

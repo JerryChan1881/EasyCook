@@ -51,7 +51,6 @@ import androidx.navigation.NavHostController
 import com.example.easycook.R
 import com.example.easycook.Routes
 import com.example.easycook.StateViewModel
-import com.example.easycook.data.Recipe
 import com.example.easycook.data.RecipeSearch
 import com.example.easycook.ui.composable.EasyCookFab
 import com.example.easycook.ui.composable.RecipeCard
@@ -63,7 +62,9 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val recipes by stateViewModel.recipes.collectAsState()
-    var recipeToDelete by remember { mutableStateOf<Recipe?>(null) }
+    // On garde l'identifiant (et non la recette) pour que la confirmation survive à une rotation
+    var recipeToDeleteId by rememberSaveable { mutableStateOf<Int?>(null) }
+    val recipeToDelete = recipes.find { it.id == recipeToDeleteId }
     // rememberSaveable : la recherche est conservée au retour depuis le détail d'une recette
     var isSearching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -143,7 +144,7 @@ fun HomeScreen(
                                 modifier = Modifier.weight(1f)
                             )
 
-                            IconButton(onClick = { recipeToDelete = recipe }) {
+                            IconButton(onClick = { recipeToDeleteId = recipe.id }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = stringResource(R.string.home_delete_recipe),
@@ -167,7 +168,7 @@ fun HomeScreen(
 
         recipeToDelete?.let { recipe ->
             AlertDialog(
-                onDismissRequest = { recipeToDelete = null },
+                onDismissRequest = { recipeToDeleteId = null },
                 icon = {
                     Icon(
                         imageVector = Icons.Default.Delete,
@@ -183,7 +184,7 @@ fun HomeScreen(
                     TextButton(
                         onClick = {
                             stateViewModel.deleteRecipe(recipe.id)
-                            recipeToDelete = null
+                            recipeToDeleteId = null
                         }
                     ) {
                         Text(
@@ -193,7 +194,7 @@ fun HomeScreen(
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { recipeToDelete = null }) {
+                    TextButton(onClick = { recipeToDeleteId = null }) {
                         Text(stringResource(R.string.action_cancel))
                     }
                 }

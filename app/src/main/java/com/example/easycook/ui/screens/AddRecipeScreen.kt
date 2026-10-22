@@ -24,9 +24,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,23 +39,20 @@ import com.example.easycook.data.IngredientParser
 import com.example.easycook.data.RecipeError
 import com.example.easycook.data.RecipeValidator
 import com.example.easycook.ui.messageRes
-
-data class StepForm(
-    val description: String = ""
-)
+import com.example.easycook.ui.rememberSaveableStringList
 
 @Composable
 fun AddRecipeScreen(
     navController: NavHostController,
     stateViewModel: StateViewModel
 ) {
-    var title by remember { mutableStateOf("") }
-    var image by remember { mutableStateOf("") }
-    var cookingTime by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<RecipeError?>(null) }
-    val ingredients = remember { mutableStateListOf("") }
-    val steps = remember { mutableStateListOf(StepForm()) }
+    var title by rememberSaveable { mutableStateOf("") }
+    var image by rememberSaveable { mutableStateOf("") }
+    var cookingTime by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
+    var errorMessage by rememberSaveable { mutableStateOf<RecipeError?>(null) }
+    val ingredients = rememberSaveableStringList { listOf("") }
+    val steps = rememberSaveableStringList { listOf("") }
 
     Column(
         modifier = Modifier
@@ -192,10 +188,8 @@ fun AddRecipeScreen(
                     style = MaterialTheme.typography.titleMedium
                 )
                 OutlinedTextField(
-                    value = step.description,
-                    onValueChange = { value ->
-                        steps[index] = step.copy(description = value)
-                    },
+                    value = step,
+                    onValueChange = { value -> steps[index] = value },
                     modifier = Modifier.weight(1f),
                     label = { Text(stringResource(R.string.step_instruction)) },
                     placeholder = { Text(stringResource(R.string.step_instruction_placeholder)) },
@@ -214,7 +208,7 @@ fun AddRecipeScreen(
         }
 
         OutlinedButton(
-            onClick = { steps.add(StepForm()) },
+            onClick = { steps.add("") },
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
@@ -250,7 +244,7 @@ fun AddRecipeScreen(
                         cookingTime = RecipeValidator.parseCookingTime(cookingTime) ?: 0,
                         description = description.trim(),
                         ingredients = RecipeValidator.cleanIngredients(rawIngredients),
-                        steps = RecipeValidator.cleanSteps(steps.map { it.description }),
+                        steps = RecipeValidator.cleanSteps(steps),
                         onComplete = { navController.popBackStack() }
                     )
                 }
