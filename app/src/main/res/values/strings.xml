@@ -31,7 +31,6 @@
     <string name="recipe_form_description">Description (facultatif)</string>
     <string name="recipe_form_description_placeholder">Décrivez la recette en détail : étapes, astuces, accompagnements…</string>
     <string name="recipe_form_ingredients">Ingrédients</string>
-    <string name="recipe_form_quantity">Quantité</string>
     <string name="recipe_form_ingredient">Ingrédient</string>
     <string name="recipe_form_ingredient_placeholder">200 g Spaghetti</string>
     <string name="recipe_form_delete_ingredient">Supprimer l\'ingrédient</string>
