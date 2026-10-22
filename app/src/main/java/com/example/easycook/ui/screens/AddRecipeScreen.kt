@@ -241,7 +241,7 @@ fun AddRecipeScreen(
                     stateViewModel.addRecipe(
                         title = title.trim(),
                         image = image.trim(),
-                        cookingTime = RecipeValidator.parseCookingTime(cookingTime) ?: 0,
+                        cookingTime = RecipeValidator.cookingTimeOrNone(cookingTime),
                         description = description.trim(),
                         ingredients = RecipeValidator.cleanIngredients(rawIngredients),
                         steps = RecipeValidator.cleanSteps(steps),

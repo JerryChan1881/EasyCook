@@ -52,9 +52,11 @@ fun RecipeCard(
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                if (recipe.hasCookingTime) {
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                CookingTimeChip(minutes = recipe.cookingTime)
+                    CookingTimeChip(minutes = recipe.cookingTime)
+                }
             }
 
             IconButton(onClick = {}) {

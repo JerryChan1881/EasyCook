@@ -44,6 +44,50 @@ class RecipeValidatorTest {
         assertNull(RecipeValidator.parseCookingTime(""))
     }
 
+    // --- Temps de cuisson facultatif ---
+
+    @Test
+    fun `cookingTimeOrNone renvoie la valeur saisie`() {
+        assertEquals(30, RecipeValidator.cookingTimeOrNone("30"))
+    }
+
+    @Test
+    fun `cookingTimeOrNone renvoie NO_COOKING_TIME pour un champ vide`() {
+        assertEquals(Recipe.NO_COOKING_TIME, RecipeValidator.cookingTimeOrNone("  "))
+    }
+
+    @Test
+    fun `formatCookingTime affiche la valeur ou un champ vide`() {
+        assertEquals("45", RecipeValidator.formatCookingTime(45))
+        assertEquals("", RecipeValidator.formatCookingTime(Recipe.NO_COOKING_TIME))
+    }
+
+    @Test
+    fun `hasCookingTime indique si le temps est renseigne`() {
+        val recipe = Recipe(id = 1, title = "Salade", image = "", cookingTime = 0, ingredientList = emptyList())
+
+        assertTrue(!recipe.hasCookingTime)
+        assertTrue(recipe.copy(cookingTime = 15).hasCookingTime)
+    }
+
+    @Test
+    fun `validate accepte un temps de cuisson vide`() {
+        assertNull(RecipeValidator.validate(title = "Salade", rawCookingTime = "", ingredients = validIngredients))
+        assertNull(RecipeValidator.validate(title = "Salade", rawCookingTime = "   ", ingredients = validIngredients))
+    }
+
+    @Test
+    fun `validate refuse un temps de cuisson nul ou negatif`() {
+        assertEquals(
+            RecipeError.COOKING_TIME_INVALID,
+            RecipeValidator.validate(title = "Salade", rawCookingTime = "0", ingredients = validIngredients)
+        )
+        assertEquals(
+            RecipeError.COOKING_TIME_INVALID,
+            RecipeValidator.validate(title = "Salade", rawCookingTime = "-5", ingredients = validIngredients)
+        )
+    }
+
     // --- cleanIngredients ---
 
     @Test

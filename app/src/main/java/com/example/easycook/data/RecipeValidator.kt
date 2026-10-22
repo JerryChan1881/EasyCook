@@ -26,6 +26,17 @@ object RecipeValidator {
     }
 
     /**
+     * Temps de cuisson à enregistrer : la valeur saisie, ou [Recipe.NO_COOKING_TIME]
+     * si le champ est vide (le temps de cuisson est facultatif).
+     */
+    fun cookingTimeOrNone(rawValue: String): Int =
+        parseCookingTime(rawValue) ?: Recipe.NO_COOKING_TIME
+
+    /** Texte à afficher dans le champ de saisie : vide si le temps n'est pas renseigné. */
+    fun formatCookingTime(cookingTime: Int): String =
+        if (cookingTime > Recipe.NO_COOKING_TIME) cookingTime.toString() else ""
+
+    /**
      * Retire les lignes d'ingrédients laissées vides et nettoie les espaces.
      * Le texte d'un ingrédient est libre : seule une ligne entièrement vide est retirée.
      * L'ordre des ingrédients est conservé.
@@ -64,7 +75,8 @@ object RecipeValidator {
             return RecipeError.TITLE_REQUIRED
         }
 
-        if (parseCookingTime(rawCookingTime) == null) {
+        // Facultatif : seule une valeur saisie mais invalide est refusée
+        if (rawCookingTime.isNotBlank() && parseCookingTime(rawCookingTime) == null) {
             return RecipeError.COOKING_TIME_INVALID
         }
 

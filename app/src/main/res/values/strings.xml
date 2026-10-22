@@ -27,7 +27,7 @@
     <string name="add_recipe_title">Nouvelle recette</string>
     <string name="recipe_form_name">Nom de la recette</string>
     <string name="recipe_form_image">Image (URL)</string>
-    <string name="recipe_form_cooking_time">Temps de cuisson (minutes)</string>
+    <string name="recipe_form_cooking_time">Temps de cuisson en minutes (facultatif)</string>
     <string name="recipe_form_description">Description (facultatif)</string>
     <string name="recipe_form_description_placeholder">Décrivez la recette en détail : étapes, astuces, accompagnements…</string>
     <string name="recipe_form_ingredients">Ingrédients</string>
@@ -69,7 +69,7 @@
 
     <!-- Erreurs de validation -->
     <string name="error_title_required">Le nom de la recette est obligatoire.</string>
-    <string name="error_cooking_time_invalid">Le temps de cuisson doit être un nombre positif.</string>
+    <string name="error_cooking_time_invalid">Le temps de cuisson doit être un nombre de minutes positif, ou rester vide.</string>
     <string name="error_no_ingredient">Ajoutez au moins un ingrédient.</string>
     <string name="error_instruction_empty">L\'instruction ne peut pas être vide.</string>
 </resources>

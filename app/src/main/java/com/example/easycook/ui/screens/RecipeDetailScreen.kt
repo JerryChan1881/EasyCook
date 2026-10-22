@@ -63,7 +63,7 @@ fun RecipeDetailScreen(
     var isEditing by rememberSaveable { mutableStateOf(false) }
     var title by rememberSaveable { mutableStateOf(recipe.title) }
     var image by rememberSaveable { mutableStateOf(recipe.image) }
-    var cookingTime by rememberSaveable { mutableStateOf(recipe.cookingTime.toString()) }
+    var cookingTime by rememberSaveable { mutableStateOf(RecipeValidator.formatCookingTime(recipe.cookingTime)) }
     var description by rememberSaveable { mutableStateOf(recipe.description) }
     var errorMessage by rememberSaveable { mutableStateOf<RecipeError?>(null) }
     val ingredients = rememberSaveableStringList {
@@ -86,7 +86,7 @@ fun RecipeDetailScreen(
     val resetForm: () -> Unit = {
         title = recipe.title
         image = recipe.image
-        cookingTime = recipe.cookingTime.toString()
+        cookingTime = RecipeValidator.formatCookingTime(recipe.cookingTime)
         description = recipe.description
         ingredients.clear()
         ingredients.addAll(recipe.ingredientList.map(IngredientParser::format))
@@ -111,7 +111,7 @@ fun RecipeDetailScreen(
                 id = recipe.id,
                 title = title.trim(),
                 image = image.trim(),
-                cookingTime = RecipeValidator.parseCookingTime(cookingTime) ?: 0,
+                cookingTime = RecipeValidator.cookingTimeOrNone(cookingTime),
                 description = description.trim(),
                 ingredients = RecipeValidator.cleanIngredients(rawIngredients),
                 steps = RecipeValidator.cleanSteps(steps),
@@ -314,9 +314,11 @@ fun RecipeDetailScreen(
                     style = MaterialTheme.typography.headlineMedium
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                if (recipe.hasCookingTime) {
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                CookingTimeChip(minutes = recipe.cookingTime)
+                    CookingTimeChip(minutes = recipe.cookingTime)
+                }
 
                 if (recipe.description.isNotBlank()) {
                     Spacer(modifier = Modifier.height(16.dp))
