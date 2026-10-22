@@ -5,7 +5,7 @@ Elle permet de créer ses propres recettes, de les consulter et de les suivre é
 
 ## Fonctionnalités
 
-- **Liste des recettes** : toutes les recettes enregistrées, avec leur temps de cuisson, et la suppression après confirmation.
+- **Liste des recettes** : grille de cartes (2 colonnes en portrait, 3 en paysage), avec le temps de cuisson et la suppression après confirmation.
 - **Création d'une recette** : nom, image (URL), temps de cuisson, description, ingrédients et étapes de préparation (facultatives).
 - **Détail et modification** : consultation complète d'une recette et modification de tous ses champs.
 - **Mode étape par étape** : chaque étape se coche une fois réalisée, avec une barre de progression. On peut aussi ajouter, modifier ou supprimer des étapes directement depuis cet écran.

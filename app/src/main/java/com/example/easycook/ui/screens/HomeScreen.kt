@@ -1,5 +1,6 @@
 package com.example.easycook.ui.screens
 
+import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,8 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -42,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -125,33 +128,26 @@ fun HomeScreen(
             } else if (displayedRecipes.isEmpty()) {
                 NoSearchResult(query = query, modifier = Modifier.fillMaxSize())
             } else {
-                LazyColumn(
+                // 2 colonnes en portrait, 3 en paysage
+                val isLandscape =
+                    LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+                val columns = if (isLandscape) 3 else 2
+
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(columns),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 88.dp)
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 88.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(displayedRecipes, key = { it.id }) { recipe ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RecipeCard(
-                                recipe = recipe,
-                                onClick = {
-                                    navController.navigate(Routes.recipeDetail(recipe.id))
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-
-                            IconButton(onClick = { recipeToDeleteId = recipe.id }) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = stringResource(R.string.home_delete_recipe),
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
+                        RecipeCard(
+                            recipe = recipe,
+                            onClick = {
+                                navController.navigate(Routes.recipeDetail(recipe.id))
+                            },
+                            onDelete = { recipeToDeleteId = recipe.id }
+                        )
                     }
                 }
             }

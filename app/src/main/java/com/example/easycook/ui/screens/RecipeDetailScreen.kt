@@ -303,8 +303,10 @@ fun RecipeDetailScreen(
             } else {
                 RecipeBanner(
                     recipeId = recipe.id,
-                    modifier = Modifier.clip(MaterialTheme.shapes.large),
-                    height = 160.dp
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.large)
+                        .height(160.dp),
+                    iconSize = 53.dp
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

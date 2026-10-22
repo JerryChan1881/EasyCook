@@ -64,12 +64,13 @@ fun CookingTimeChip(
 /**
  * Bandeau illustrant une recette, en attendant l'affichage des vraies images.
  * La couleur alterne entre orange et vert d'une recette à l'autre.
+ * Sa taille est fixée par l'appelant via [modifier] (hauteur fixe, weight, fillMaxSize…).
  */
 @Composable
 fun RecipeBanner(
     recipeId: Int,
     modifier: Modifier = Modifier,
-    height: Dp = 96.dp
+    iconSize: Dp = 32.dp
 ) {
     val isOrange = recipeId % 2 == 0
     val background = if (isOrange) {
@@ -86,14 +87,13 @@ fun RecipeBanner(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(height)
             .background(background),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = if (isOrange) Icons.Default.Restaurant else Icons.Default.RamenDining,
             contentDescription = null,
-            modifier = Modifier.size(height / 3),
+            modifier = Modifier.size(iconSize),
             tint = tint
         )
     }
