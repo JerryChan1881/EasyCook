@@ -8,19 +8,26 @@ import com.example.easycook.data.Recipe
 import com.example.easycook.data.RecipeDao
 import com.example.easycook.data.RecipeDatabase
 import com.example.easycook.data.RecipeEntity
+import com.example.easycook.data.RecipeImageCleaner
 import com.example.easycook.data.RecipeStep
 import com.example.easycook.data.StepEntity
+import com.example.easycook.ui.image.RecipeImageStore
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class StateViewModel(
     private val recipeDao: RecipeDao,
-    coroutineScope: CoroutineScope? = null
+    coroutineScope: CoroutineScope? = null,
+    private val imageCleaner: RecipeImageCleaner? = null,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ViewModel() {
 
     /**
@@ -54,6 +61,16 @@ class StateViewModel(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList()
         )
+
+    init {
+        // Supprime les images laissées par des formulaires abandonnés ou des images remplacées
+        imageCleaner?.let { cleaner ->
+            scope.launch {
+                val usedImages = recipeDao.getAllImages().filter { it.isNotBlank() }.toSet()
+                withContext(ioDispatcher) { cleaner.deleteUnused(usedImages) }
+            }
+        }
+    }
 
     fun addRecipe(
         title: String,
@@ -90,6 +107,7 @@ class StateViewModel(
         onComplete: () -> Unit
     ) {
         scope.launch {
+            val previousImage = recipeDao.getImage(id)
             recipeDao.updateRecipeWithIngredients(
                 id = id,
                 title = title,
@@ -99,6 +117,9 @@ class StateViewModel(
                 ingredients = ingredients,
                 steps = steps
             )
+            if (previousImage != image) {
+                deleteImage(previousImage)
+            }
             onComplete()
         }
     }
@@ -111,7 +132,16 @@ class StateViewModel(
 
     fun deleteRecipe(id: Int) {
         scope.launch {
+            val image = recipeDao.getImage(id)
             recipeDao.deleteRecipeById(id)
+            deleteImage(image)
+        }
+    }
+
+    private suspend fun deleteImage(path: String?) {
+        val cleaner = imageCleaner ?: return
+        if (!path.isNullOrBlank()) {
+            withContext(ioDispatcher) { cleaner.delete(path) }
         }
     }
 
@@ -166,7 +196,8 @@ class StateViewModel(
 
     companion object {
         fun from(application: Application): StateViewModel = StateViewModel(
-            RecipeDatabase.getInstance(application).recipeDao()
+            recipeDao = RecipeDatabase.getInstance(application).recipeDao(),
+            imageCleaner = RecipeImageStore(application)
         )
     }
 }

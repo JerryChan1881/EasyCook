@@ -27,7 +27,6 @@
     <!-- Formulaire de recette (création et modification) -->
     <string name="add_recipe_title">Nouvelle recette</string>
     <string name="recipe_form_name">Nom de la recette</string>
-    <string name="recipe_form_image">Image (URL)</string>
     <string name="recipe_form_cooking_time">Temps de cuisson en minutes (facultatif)</string>
     <string name="recipe_form_description">Description (facultatif)</string>
     <string name="recipe_form_description_placeholder">Décrivez la recette en détail : étapes, astuces, accompagnements…</string>
@@ -41,6 +40,22 @@
     <string name="recipe_form_add_step">Ajouter une étape de préparation</string>
     <string name="recipe_form_save">Enregistrer la recette</string>
     <string name="recipe_form_cancel_changes">Annuler les modifications</string>
+
+    <!-- Image de la recette -->
+    <string name="image_add">Ajouter une image (facultatif)</string>
+    <string name="image_change">Changer l\'image</string>
+    <string name="image_remove">Retirer</string>
+    <string name="image_description">Photo de la recette</string>
+    <string name="image_source_title">Ajouter une image</string>
+    <string name="image_source_gallery">Choisir dans la galerie</string>
+    <string name="image_source_camera">Prendre une photo</string>
+    <string name="image_error_no_camera">Aucune application d\'appareil photo n\'est disponible.</string>
+    <string name="image_error_load">Impossible de charger cette image.</string>
+    <string name="crop_title">Recadrer l\'image</string>
+    <string name="crop_hint">Déplacez l\'image et écartez deux doigts pour zoomer.</string>
+    <string name="crop_retake">Reprendre la photo</string>
+    <string name="crop_choose_other">Choisir une autre image</string>
+    <string name="crop_confirm">Valider</string>
 
     <!-- Étapes -->
     <string name="step_number">%1$d.</string>

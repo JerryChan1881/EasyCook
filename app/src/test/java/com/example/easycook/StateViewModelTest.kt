@@ -3,6 +3,7 @@ package com.example.easycook
 import com.example.easycook.data.Ingredient
 import com.example.easycook.data.IngredientEntity
 import com.example.easycook.data.RecipeEntity
+import com.example.easycook.data.RecipeImageCleaner
 import com.example.easycook.data.StepEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -369,6 +370,119 @@ class StateViewModelTest {
         val recipe = viewModel.recipes.first { list -> list.any { it.title == "Titre modifie" } }.single()
 
         assertTrue(recipe.isFavorite)
+    }
+
+    // --- Images ---
+
+    /** Enregistre les suppressions demandees au lieu de toucher au disque. */
+    private class FakeImageCleaner : RecipeImageCleaner {
+        val deleted = mutableListOf<String>()
+        var usedPathsAtCleanup: Set<String>? = null
+
+        override fun delete(path: String) {
+            deleted += path
+        }
+
+        override fun deleteUnused(usedPaths: Set<String>) {
+            usedPathsAtCleanup = usedPaths
+        }
+    }
+
+    private fun TestScope.viewModelWithImages(dao: FakeRecipeDao, cleaner: FakeImageCleaner) =
+        StateViewModel(
+            recipeDao = dao,
+            coroutineScope = newTestScope(),
+            imageCleaner = cleaner,
+            ioDispatcher = StandardTestDispatcher(testScheduler)
+        )
+
+    @Test
+    fun `au demarrage les images non utilisees sont nettoyees`() = runTest {
+        val dao = FakeRecipeDao(
+            initialRecipes = listOf(
+                RecipeEntity(id = 1, title = "Avec image", image = "/images/a.jpg", cookingTime = 10),
+                RecipeEntity(id = 2, title = "Sans image", image = "", cookingTime = 10)
+            )
+        )
+        val cleaner = FakeImageCleaner()
+
+        viewModelWithImages(dao, cleaner)
+        advanceUntilIdle()
+
+        // Seules les images reellement utilisees sont conservees ; un champ vide n'en est pas une
+        assertEquals(setOf("/images/a.jpg"), cleaner.usedPathsAtCleanup)
+    }
+
+    @Test
+    fun `supprimer une recette supprime aussi son image`() = runTest {
+        val dao = daoWithRecipe(
+            recipe = RecipeEntity(id = 1, title = "Recette", image = "/images/a.jpg", cookingTime = 10)
+        )
+        val cleaner = FakeImageCleaner()
+        val viewModel = viewModelWithImages(dao, cleaner)
+
+        viewModel.deleteRecipe(1)
+        advanceUntilIdle()
+
+        assertEquals(listOf("/images/a.jpg"), cleaner.deleted)
+    }
+
+    @Test
+    fun `supprimer une recette sans image ne supprime aucun fichier`() = runTest {
+        val cleaner = FakeImageCleaner()
+        val viewModel = viewModelWithImages(daoWithRecipe(), cleaner)
+
+        viewModel.deleteRecipe(1)
+        advanceUntilIdle()
+
+        assertTrue(cleaner.deleted.isEmpty())
+    }
+
+    @Test
+    fun `remplacer l image d une recette supprime l ancienne`() = runTest {
+        val dao = daoWithRecipe(
+            recipe = RecipeEntity(id = 1, title = "Recette", image = "/images/ancienne.jpg", cookingTime = 10)
+        )
+        val cleaner = FakeImageCleaner()
+        val viewModel = viewModelWithImages(dao, cleaner)
+
+        viewModel.updateRecipe(
+            id = 1,
+            title = "Recette",
+            image = "/images/nouvelle.jpg",
+            cookingTime = 10,
+            description = "",
+            ingredients = listOf(Ingredient("1", "Pain")),
+            steps = emptyList(),
+            onComplete = {}
+        )
+        advanceUntilIdle()
+
+        assertEquals(listOf("/images/ancienne.jpg"), cleaner.deleted)
+        assertEquals("/images/nouvelle.jpg", dao.getImage(1))
+    }
+
+    @Test
+    fun `modifier une recette sans changer son image la conserve`() = runTest {
+        val dao = daoWithRecipe(
+            recipe = RecipeEntity(id = 1, title = "Recette", image = "/images/a.jpg", cookingTime = 10)
+        )
+        val cleaner = FakeImageCleaner()
+        val viewModel = viewModelWithImages(dao, cleaner)
+
+        viewModel.updateRecipe(
+            id = 1,
+            title = "Nouveau titre",
+            image = "/images/a.jpg",
+            cookingTime = 10,
+            description = "",
+            ingredients = listOf(Ingredient("1", "Pain")),
+            steps = emptyList(),
+            onComplete = {}
+        )
+        advanceUntilIdle()
+
+        assertTrue(cleaner.deleted.isEmpty())
     }
 
     // --- deleteRecipe ---

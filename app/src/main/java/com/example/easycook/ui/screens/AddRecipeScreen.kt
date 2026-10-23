@@ -38,6 +38,7 @@ import com.example.easycook.StateViewModel
 import com.example.easycook.data.IngredientParser
 import com.example.easycook.data.RecipeError
 import com.example.easycook.data.RecipeValidator
+import com.example.easycook.ui.image.RecipeImageField
 import com.example.easycook.ui.messageRes
 import com.example.easycook.ui.rememberSaveableStringList
 
@@ -86,12 +87,10 @@ fun AddRecipeScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedTextField(
-            value = image,
-            onValueChange = { image = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.recipe_form_image)) },
-            singleLine = true
+        RecipeImageField(
+            recipeId = 0,
+            imagePath = image,
+            onImageChange = { image = it }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -240,7 +239,7 @@ fun AddRecipeScreen(
                 } else {
                     stateViewModel.addRecipe(
                         title = title.trim(),
-                        image = image.trim(),
+                        image = image,
                         cookingTime = RecipeValidator.cookingTimeOrNone(cookingTime),
                         description = description.trim(),
                         ingredients = RecipeValidator.cleanIngredients(rawIngredients),

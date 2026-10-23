@@ -65,6 +65,12 @@ class FakeRecipeDao(
         this.ingredients.value = this.ingredients.value + withIds
     }
 
+    override suspend fun getImage(id: Int): String? =
+        recipes.value.firstOrNull { it.id == id }?.image
+
+    override suspend fun getAllImages(): List<String> =
+        recipes.value.map { it.image }
+
     override suspend fun setFavorite(id: Int, isFavorite: Boolean) {
         recipes.value = recipes.value.map { recipe ->
             if (recipe.id == id) recipe.copy(isFavorite = isFavorite) else recipe

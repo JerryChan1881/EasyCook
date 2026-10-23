@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,8 +50,10 @@ import com.example.easycook.data.RecipeError
 import com.example.easycook.data.RecipeValidator
 import com.example.easycook.ui.composable.CookingTimeChip
 import com.example.easycook.ui.composable.EasyCookFab
-import com.example.easycook.ui.composable.RecipeBanner
 import com.example.easycook.ui.composable.SectionCard
+import com.example.easycook.ui.image.CropMath
+import com.example.easycook.ui.image.RecipeImage
+import com.example.easycook.ui.image.RecipeImageField
 import com.example.easycook.ui.messageRes
 import com.example.easycook.ui.rememberSaveableStringList
 
@@ -110,7 +113,7 @@ fun RecipeDetailScreen(
             stateViewModel.updateRecipe(
                 id = recipe.id,
                 title = title.trim(),
-                image = image.trim(),
+                image = image,
                 cookingTime = RecipeValidator.cookingTimeOrNone(cookingTime),
                 description = description.trim(),
                 ingredients = RecipeValidator.cleanIngredients(rawIngredients),
@@ -154,12 +157,10 @@ fun RecipeDetailScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedTextField(
-                    value = image,
-                    onValueChange = { image = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.recipe_form_image)) },
-                    singleLine = true
+                RecipeImageField(
+                    recipeId = recipe.id,
+                    imagePath = image,
+                    onImageChange = { image = it }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -301,11 +302,19 @@ fun RecipeDetailScreen(
                     Text(stringResource(R.string.recipe_form_cancel_changes))
                 }
             } else {
-                RecipeBanner(
+                // Une photo garde les proportions du recadrage ; l'illustration reste plus compacte
+                RecipeImage(
                     recipeId = recipe.id,
+                    imagePath = recipe.image,
                     modifier = Modifier
                         .clip(MaterialTheme.shapes.large)
-                        .height(160.dp),
+                        .then(
+                            if (recipe.image.isNotBlank()) {
+                                Modifier.aspectRatio(CropMath.ASPECT_RATIO)
+                            } else {
+                                Modifier.height(160.dp)
+                            }
+                        ),
                     iconSize = 53.dp
                 )
 

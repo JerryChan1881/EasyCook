@@ -8,8 +8,9 @@ Elle permet de créer ses propres recettes, de les consulter et de les suivre é
 - **Liste des recettes** : grille de cartes (2 colonnes en portrait, 3 en paysage), avec le temps de cuisson et la suppression après confirmation.
 - **Favoris** : le cœur d'une carte met la recette en favori ; les favoris sont affichés en premier.
 - **Recherche** : la loupe de l'accueil filtre les recettes au fil de la saisie (titre, ingrédients, description), en ignorant majuscules et accents, et classe les résultats par pertinence.
-- **Création d'une recette** : nom, image (URL), temps de cuisson, description, ingrédients et étapes de préparation (facultatives).
+- **Création d'une recette** : nom, photo, temps de cuisson, description, ingrédients et étapes de préparation (facultatives).
 - **Détail et modification** : consultation complète d'une recette et modification de tous ses champs.
+- **Photo de la recette** (facultative) : choisie dans la galerie ou prise avec l'appareil photo, puis recadrée (déplacement et zoom à deux doigts) ; on peut reprendre la photo avant de valider. Les images sont stockées dans l'espace privé de l'application et supprimées avec leur recette.
 - **Mode étape par étape** : chaque étape se coche une fois réalisée, avec une barre de progression. On peut aussi ajouter, modifier ou supprimer des étapes directement depuis cet écran.
 - **Validation des saisies** : nom obligatoire et au moins un ingrédient. Le temps de cuisson est facultatif, mais doit être un nombre de minutes positif s'il est renseigné. Chaque ingrédient se saisit en texte libre dans un seul champ (ex. « 200 g de spaghetti ») ; les lignes vides sont ignorées.
 - **Saisie conservée** : le contenu des formulaires est conservé lors d'une rotation de l'écran.
@@ -102,5 +103,4 @@ Pour traduire l'application, il suffit d'ajouter un dossier `values-<langue>/str
 
 ## Pistes d'évolution
 
-- Afficher les vraies images des recettes à partir de leur URL (le bandeau est pour l'instant une illustration).
 - Ajouter une traduction anglaise.

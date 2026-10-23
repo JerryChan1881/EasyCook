@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dossiers partagés avec l'application appareil photo via le FileProvider -->
+<paths>
+    <cache-path name="camera" path="camera/" />
+</paths>

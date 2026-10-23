@@ -86,6 +86,12 @@ interface RecipeDao {
     @Query("UPDATE recipes SET isFavorite = :isFavorite WHERE id = :id")
     suspend fun setFavorite(id: Int, isFavorite: Boolean)
 
+    @Query("SELECT image FROM recipes WHERE id = :id")
+    suspend fun getImage(id: Int): String?
+
+    @Query("SELECT image FROM recipes")
+    suspend fun getAllImages(): List<String>
+
     @Query("DELETE FROM recipes WHERE id = :id")
     suspend fun deleteRecipeById(id: Int)
 
