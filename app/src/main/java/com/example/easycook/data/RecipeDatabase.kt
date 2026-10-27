@@ -38,14 +38,19 @@ data class StepEntity(
     val isDone: Boolean = false
 )
 
-@Entity(tableName = "recipes")
+@Entity(
+    tableName = "recipes",
+    indices = [Index(value = ["profileId"])]
+)
 data class RecipeEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val title: String,
     val image: String,
     val cookingTime: Int,
     val description: String = "",
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    // 'Mon profil' ou profil importé d'où vient la recette
+    val profileId: Int = OWN_PROFILE_ID
 )
 
 @Entity(
@@ -91,6 +96,75 @@ interface RecipeDao {
 
     @Query("SELECT image FROM recipes")
     suspend fun getAllImages(): List<String>
+
+    // --- Profils importés ---
+
+    @Query("SELECT * FROM profiles ORDER BY number")
+    fun observeProfiles(): Flow<List<ProfileEntity>>
+
+    @Query("SELECT number FROM profiles")
+    suspend fun getProfileNumbers(): List<Int>
+
+    @Insert
+    suspend fun insertProfile(profile: ProfileEntity): Long
+
+    @Query("SELECT image FROM recipes WHERE profileId = :profileId")
+    suspend fun getImagesOfProfile(profileId: Int): List<String>
+
+    @Query("DELETE FROM recipes WHERE profileId = :profileId")
+    suspend fun deleteRecipesOfProfile(profileId: Int)
+
+    @Query("DELETE FROM profiles WHERE id = :profileId")
+    suspend fun deleteProfileById(profileId: Int)
+
+    /** Supprime un profil importé et toutes ses recettes (ingrédients et étapes suivent en cascade). */
+    @Transaction
+    suspend fun deleteProfileWithRecipes(profileId: Int) {
+        deleteRecipesOfProfile(profileId)
+        deleteProfileById(profileId)
+    }
+
+    // --- Export et import ---
+
+    @Transaction
+    @Query("SELECT * FROM recipes WHERE profileId = :profileId ORDER BY id")
+    suspend fun getRecipesOfProfile(profileId: Int): List<RecipeWithIngredients>
+
+    @Query("SELECT * FROM steps ORDER BY position, id")
+    suspend fun getAllSteps(): List<StepEntity>
+
+    /**
+     * Crée un nouveau profil importé contenant les recettes de [export] et renvoie son identifiant.
+     * [imagePaths] donne, dans le même ordre que les recettes, le chemin de leur photo déjà enregistrée.
+     * Les saisies vides sont écartées comme lors d'une création manuelle.
+     */
+    @Transaction
+    suspend fun importProfile(
+        export: RecipeExport,
+        importedAt: Long,
+        imagePaths: List<String> = emptyList()
+    ): Int {
+        val profileId = insertProfile(
+            ProfileEntity(number = ProfileNumbering.next(getProfileNumbers()), importedAt = importedAt)
+        ).toInt()
+
+        export.recipes.forEachIndexed { index, recipe ->
+            insertRecipeWithIngredients(
+                recipe = RecipeEntity(
+                    title = recipe.title.trim(),
+                    image = imagePaths.getOrElse(index) { "" },
+                    cookingTime = recipe.cookingTime.coerceAtLeast(Recipe.NO_COOKING_TIME),
+                    description = recipe.description.trim(),
+                    profileId = profileId
+                ),
+                ingredients = RecipeValidator.cleanIngredients(
+                    recipe.ingredients.map { Ingredient(quantity = it.quantity, name = it.name) }
+                ),
+                steps = RecipeValidator.cleanSteps(recipe.steps)
+            )
+        }
+        return profileId
+    }
 
     @Query("DELETE FROM recipes WHERE id = :id")
     suspend fun deleteRecipeById(id: Int)
@@ -206,8 +280,8 @@ interface RecipeDao {
 }
 
 @Database(
-    entities = [RecipeEntity::class, IngredientEntity::class, StepEntity::class],
-    version = 4,
+    entities = [RecipeEntity::class, IngredientEntity::class, StepEntity::class, ProfileEntity::class],
+    version = 5,
     exportSchema = false
 )
 abstract class RecipeDatabase : RoomDatabase() {
@@ -254,6 +328,23 @@ abstract class RecipeDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `profiles` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `number` INTEGER NOT NULL,
+                        `importedAt` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                // Les recettes existantes appartiennent à 'Mon profil'
+                db.execSQL("ALTER TABLE recipes ADD COLUMN profileId INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_recipes_profileId` ON `recipes` (`profileId`)")
+            }
+        }
+
         @Volatile
         private var instance: RecipeDatabase? = null
 
@@ -264,7 +355,7 @@ abstract class RecipeDatabase : RoomDatabase() {
                     RecipeDatabase::class.java,
                     "easycook.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_1_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_1_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build().also { instance = it }
             }
         }

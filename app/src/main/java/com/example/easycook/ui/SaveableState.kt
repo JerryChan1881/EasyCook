@@ -3,7 +3,9 @@ package com.example.easycook.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.snapshots.SnapshotStateSet
 import androidx.compose.runtime.toMutableStateList
 
 /**
@@ -20,4 +22,16 @@ fun rememberSaveableStringList(initial: () -> List<String>): SnapshotStateList<S
         )
     ) {
         initial().toMutableStateList()
+    }
+
+/** Ensemble d'identifiants modifiable qui survit aux recréations de l'écran (sélection de recettes…). */
+@Composable
+fun rememberSaveableIntSet(): SnapshotStateSet<Int> =
+    rememberSaveable(
+        saver = listSaver(
+            save = { it.toList() },
+            restore = { saved -> mutableStateSetOf<Int>().apply { addAll(saved) } }
+        )
+    ) {
+        mutableStateSetOf()
     }

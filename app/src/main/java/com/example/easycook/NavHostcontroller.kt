@@ -7,9 +7,11 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.easycook.data.OWN_PROFILE_ID
 import com.example.easycook.ui.screens.AddRecipeScreen
 import com.example.easycook.ui.screens.HomeScreen
 import com.example.easycook.ui.screens.RecipeDetailScreen
+import com.example.easycook.ui.screens.ShareRecipesScreen
 import com.example.easycook.ui.screens.StepByStepScreen
 
 @Composable
@@ -49,8 +51,27 @@ fun NavHostModel(
             }
         }
 
-        composable(Routes.ADD_RECIPE) {
+        composable(Routes.ADD_RECIPE) { backStackEntry ->
+            val profileId = backStackEntry.arguments
+                ?.getString(Routes.ARG_PROFILE_ID)
+                ?.toIntOrNull()
+                ?: OWN_PROFILE_ID
+
             AddRecipeScreen(
+                profileId = profileId,
+                navController = navController,
+                stateViewModel = stateViewModel
+            )
+        }
+
+        composable(Routes.SHARE) { backStackEntry ->
+            val profileId = backStackEntry.arguments
+                ?.getString(Routes.ARG_PROFILE_ID)
+                ?.toIntOrNull()
+                ?: OWN_PROFILE_ID
+
+            ShareRecipesScreen(
+                profileId = profileId,
                 navController = navController,
                 stateViewModel = stateViewModel
             )

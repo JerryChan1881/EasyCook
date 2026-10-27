@@ -18,6 +18,65 @@
     <string name="home_empty_title">Aucune recette pour le moment</string>
     <string name="home_empty_hint">Utilisez le bouton + pour ajouter votre première recette.</string>
     <string name="home_delete_recipe_confirm">Voulez-vous vraiment supprimer « %1$s » ? Cette action est définitive.</string>
+    <string name="home_more_options">Plus d\'options</string>
+
+    <!-- Profils et transfert de recettes -->
+    <string name="profile_own">Mon profil</string>
+    <string name="profile_imported">Profil %1$d</string>
+    <string name="menu_share_qr">Partager par QR code</string>
+    <string name="menu_scan_qr">Recevoir (scanner un QR code)</string>
+    <string name="menu_export_recipes">Exporter dans un fichier</string>
+    <string name="menu_import_recipes">Importer un fichier</string>
+    <string name="menu_delete_profile">Supprimer ce profil</string>
+    <string name="delete_profile_title">Supprimer le profil</string>
+    <string name="delete_profile_confirm">Supprimer « %1$s » et toutes ses recettes ? Cette action est définitive.</string>
+    <string name="export_file_name">easycook-recettes.json</string>
+    <string name="export_success">Recettes exportées.</string>
+    <string name="export_error">Impossible d\'enregistrer le fichier.</string>
+    <plurals name="import_success">
+        <item quantity="one">%1$d recette importée.</item>
+        <item quantity="other">%1$d recettes importées.</item>
+    </plurals>
+    <string name="import_error_read">Impossible de lire ce fichier.</string>
+    <string name="import_error_invalid">Ce fichier n\'est pas un export de recettes EasyCook.</string>
+    <string name="import_error_version">Ce fichier vient d\'une version plus récente d\'EasyCook. Mettez l\'application à jour.</string>
+    <string name="import_error_empty">Ce fichier ne contient aucune recette.</string>
+
+    <!-- Partage par QR code -->
+    <string name="share_title">Partager</string>
+    <string name="share_no_recipes">Aucune recette à partager dans ce profil.</string>
+    <string name="share_select_hint">Choisissez les recettes à envoyer. Leurs photos sont envoyées avec.</string>
+    <string name="share_select_all">Tout sélectionner</string>
+    <string name="share_selected_count">%1$d / %2$d</string>
+    <plurals name="share_generate_qr">
+        <item quantity="one">Créer le QR code (%1$d recette)</item>
+        <item quantity="other">Créer le QR code (%1$d recettes)</item>
+    </plurals>
+    <string name="share_preparing">Préparation des recettes…</string>
+    <string name="share_no_network">Connectez ce téléphone à un réseau Wi-Fi (ou activez son partage de connexion) pour partager par QR code.</string>
+    <plurals name="share_scan_hint">
+        <item quantity="one">Scannez ce code avec EasyCook sur l\'autre téléphone pour recevoir %1$d recette.</item>
+        <item quantity="other">Scannez ce code avec EasyCook sur l\'autre téléphone pour recevoir %1$d recettes.</item>
+    </plurals>
+    <string name="share_qr_description">QR code de partage des recettes</string>
+    <string name="share_same_network">Les deux téléphones doivent être sur le même réseau Wi-Fi. Gardez cet écran ouvert pendant l\'envoi.</string>
+    <plurals name="share_sent_count">
+        <item quantity="one">Recettes envoyées à %1$d téléphone.</item>
+        <item quantity="other">Recettes envoyées à %1$d téléphones.</item>
+    </plurals>
+    <string name="share_change_selection">Modifier la sélection</string>
+    <string name="share_finish">Terminer</string>
+
+    <!-- Réception par QR code -->
+    <string name="scan_prompt">Scannez le QR code affiché sur l\'autre téléphone</string>
+    <string name="receive_progress">Réception des recettes…</string>
+    <string name="receive_error_not_easycook">Ce QR code n\'est pas un partage de recettes EasyCook.</string>
+    <string name="receive_error_unreachable">Impossible de joindre l\'autre téléphone. Vérifiez que les deux sont sur le même Wi-Fi et que le QR code est toujours affiché.</string>
+    <string name="receive_error_refused">Ce QR code n\'est plus valide. Demandez à l\'autre téléphone d\'en afficher un nouveau.</string>
+    <string name="receive_error_too_large">Trop de données à recevoir en une fois. Partagez moins de recettes à la fois.</string>
+    <string name="receive_error_invalid_data">Les données reçues sont illisibles. Recommencez en scannant à nouveau le QR code.</string>
+    <string name="local_network_denied_share">Autorisez « Appareils à proximité » pour qu\'EasyCook puisse partager vos recettes avec l\'autre téléphone.</string>
+    <string name="local_network_denied_receive">Autorisez « Appareils à proximité » pour qu\'EasyCook puisse recevoir les recettes de l\'autre téléphone.</string>
 
     <!-- Carte de recette -->
     <string name="recipe_card_cooking_time">%1$d min</string>

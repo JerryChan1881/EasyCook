@@ -7,7 +7,9 @@ data class Recipe(
     val cookingTime: Int,
     val ingredientList: List<Ingredient>,
     val description: String = "",
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    /** « Mon profil » ([OWN_PROFILE_ID]) ou profil importé auquel appartient la recette. */
+    val profileId: Int = OWN_PROFILE_ID
 ) {
     /** Le temps de cuisson est facultatif : [NO_COOKING_TIME] signifie qu'il n'a pas été renseigné. */
     val hasCookingTime: Boolean

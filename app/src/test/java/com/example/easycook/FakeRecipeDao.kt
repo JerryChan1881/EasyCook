@@ -1,6 +1,7 @@
 package com.example.easycook
 
 import com.example.easycook.data.IngredientEntity
+import com.example.easycook.data.ProfileEntity
 import com.example.easycook.data.RecipeDao
 import com.example.easycook.data.RecipeEntity
 import com.example.easycook.data.RecipeWithIngredients
@@ -21,16 +22,19 @@ import kotlinx.coroutines.flow.map
 class FakeRecipeDao(
     initialRecipes: List<RecipeEntity> = emptyList(),
     initialIngredients: List<IngredientEntity> = emptyList(),
-    initialSteps: List<StepEntity> = emptyList()
+    initialSteps: List<StepEntity> = emptyList(),
+    initialProfiles: List<ProfileEntity> = emptyList()
 ) : RecipeDao {
 
     private val recipes = MutableStateFlow(initialRecipes)
     private val ingredients = MutableStateFlow(initialIngredients)
     private val steps = MutableStateFlow(initialSteps)
+    private val profiles = MutableStateFlow(initialProfiles)
 
     private var nextRecipeId = (initialRecipes.maxOfOrNull { it.id } ?: 0) + 1
     private var nextIngredientId = (initialIngredients.maxOfOrNull { it.id } ?: 0) + 1
     private var nextStepEntityId = (initialSteps.maxOfOrNull { it.id } ?: 0L) + 1
+    private var nextProfileId = (initialProfiles.maxOfOrNull { it.id } ?: 0) + 1
 
     override fun observeRecipes(): Flow<List<RecipeWithIngredients>> =
         recipes.map { recipeList ->
@@ -70,6 +74,46 @@ class FakeRecipeDao(
 
     override suspend fun getAllImages(): List<String> =
         recipes.value.map { it.image }
+
+    override fun observeProfiles(): Flow<List<ProfileEntity>> =
+        profiles.map { list -> list.sortedBy { it.number } }
+
+    override suspend fun getProfileNumbers(): List<Int> = profiles.value.map { it.number }
+
+    override suspend fun insertProfile(profile: ProfileEntity): Long {
+        val assignedId = nextProfileId++
+        profiles.value = profiles.value + profile.copy(id = assignedId)
+        return assignedId.toLong()
+    }
+
+    override suspend fun getImagesOfProfile(profileId: Int): List<String> =
+        recipes.value.filter { it.profileId == profileId }.map { it.image }
+
+    override suspend fun deleteRecipesOfProfile(profileId: Int) {
+        // Reproduit la suppression en cascade des ingredients et des etapes
+        val recipeIds = recipes.value.filter { it.profileId == profileId }.map { it.id }.toSet()
+        recipes.value = recipes.value.filterNot { it.id in recipeIds }
+        ingredients.value = ingredients.value.filterNot { it.recipeId in recipeIds }
+        steps.value = steps.value.filterNot { it.recipeId in recipeIds }
+    }
+
+    override suspend fun deleteProfileById(profileId: Int) {
+        profiles.value = profiles.value.filterNot { it.id == profileId }
+    }
+
+    override suspend fun getRecipesOfProfile(profileId: Int): List<RecipeWithIngredients> =
+        recipes.value
+            .filter { it.profileId == profileId }
+            .sortedBy { it.id }
+            .map { recipe ->
+                RecipeWithIngredients(
+                    recipe = recipe,
+                    ingredients = ingredients.value.filter { it.recipeId == recipe.id }
+                )
+            }
+
+    override suspend fun getAllSteps(): List<StepEntity> =
+        steps.value.sortedWith(compareBy({ it.position }, { it.id }))
 
     override suspend fun setFavorite(id: Int, isFavorite: Boolean) {
         recipes.value = recipes.value.map { recipe ->

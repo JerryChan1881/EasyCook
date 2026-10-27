@@ -44,6 +44,7 @@ import com.example.easycook.ui.rememberSaveableStringList
 
 @Composable
 fun AddRecipeScreen(
+    profileId: Int,
     navController: NavHostController,
     stateViewModel: StateViewModel
 ) {
@@ -244,6 +245,7 @@ fun AddRecipeScreen(
                         description = description.trim(),
                         ingredients = RecipeValidator.cleanIngredients(rawIngredients),
                         steps = RecipeValidator.cleanSteps(steps),
+                        profileId = profileId,
                         onComplete = { navController.popBackStack() }
                     )
                 }

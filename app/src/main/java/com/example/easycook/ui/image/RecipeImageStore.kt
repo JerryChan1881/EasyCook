@@ -2,9 +2,10 @@ package com.example.easycook.ui.image
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.core.content.FileProvider
-import com.example.easycook.data.RecipeImageCleaner
+import com.example.easycook.data.RecipeImageFiles
 import java.io.File
 import java.util.UUID
 
@@ -14,7 +15,7 @@ import java.util.UUID
  * Chaque image enregistrée reçoit un nom unique et n'est jamais réécrite :
  * changer l'image d'une recette crée un nouveau fichier et supprime l'ancien.
  */
-class RecipeImageStore(context: Context) : RecipeImageCleaner {
+class RecipeImageStore(context: Context) : RecipeImageFiles {
 
     private val appContext = context.applicationContext
 
@@ -37,6 +38,33 @@ class RecipeImageStore(context: Context) : RecipeImageCleaner {
         return file.absolutePath
     }
 
+    override fun read(path: String): ByteArray? {
+        val file = File(path)
+        return if (file.parentFile == imagesDir && file.isFile) {
+            runCatching { file.readBytes() }.getOrNull()
+        } else {
+            null
+        }
+    }
+
+    override fun save(bytes: ByteArray): String? {
+        // Une image reçue d'un autre téléphone doit être une vraie image, de taille raisonnable
+        if (bytes.isEmpty() || bytes.size > MAX_RECEIVED_IMAGE_BYTES) {
+            return null
+        }
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            return null
+        }
+
+        val file = File(imagesDir, "${UUID.randomUUID()}.jpg")
+        return runCatching {
+            file.writeBytes(bytes)
+            file.absolutePath
+        }.getOrNull()
+    }
+
     override fun delete(path: String) {
         val file = File(path)
         if (file.parentFile == imagesDir) {
@@ -56,5 +84,6 @@ class RecipeImageStore(context: Context) : RecipeImageCleaner {
         const val IMAGES_DIR = "recipe_images"
         const val CAMERA_DIR = "camera"
         const val JPEG_QUALITY = 85
+        const val MAX_RECEIVED_IMAGE_BYTES = 5 * 1024 * 1024
     }
 }

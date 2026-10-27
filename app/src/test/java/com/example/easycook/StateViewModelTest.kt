@@ -1,9 +1,17 @@
 package com.example.easycook
 
+import com.example.easycook.data.DecodeResult
+import com.example.easycook.data.ExportedIngredient
+import com.example.easycook.data.ExportedRecipe
+import com.example.easycook.data.ImportError
+import com.example.easycook.data.ImportResult
 import com.example.easycook.data.Ingredient
 import com.example.easycook.data.IngredientEntity
+import com.example.easycook.data.OWN_PROFILE_ID
+import com.example.easycook.data.ProfileEntity
 import com.example.easycook.data.RecipeEntity
-import com.example.easycook.data.RecipeImageCleaner
+import com.example.easycook.data.RecipeImageFiles
+import com.example.easycook.data.RecipeTransfer
 import com.example.easycook.data.StepEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,11 +67,13 @@ class StateViewModelTest {
     private fun daoWithRecipe(
         recipe: RecipeEntity = RecipeEntity(id = 1, title = "Recette existante", image = "", cookingTime = 10),
         ingredients: List<IngredientEntity> = emptyList(),
-        steps: List<StepEntity> = emptyList()
+        steps: List<StepEntity> = emptyList(),
+        initialProfiles: List<ProfileEntity> = emptyList()
     ) = FakeRecipeDao(
         initialRecipes = listOf(recipe),
         initialIngredients = ingredients,
-        initialSteps = steps
+        initialSteps = steps,
+        initialProfiles = initialProfiles
     )
 
     private fun step(
@@ -374,10 +384,23 @@ class StateViewModelTest {
 
     // --- Images ---
 
-    /** Enregistre les suppressions demandees au lieu de toucher au disque. */
-    private class FakeImageCleaner : RecipeImageCleaner {
+    /** Images en memoire au lieu du disque ; enregistre aussi les suppressions demandees. */
+    private class FakeImageFiles(
+        val files: MutableMap<String, ByteArray> = mutableMapOf()
+    ) : RecipeImageFiles {
         val deleted = mutableListOf<String>()
         var usedPathsAtCleanup: Set<String>? = null
+        private var savedCount = 0
+
+        override fun read(path: String): ByteArray? = files[path]
+
+        override fun save(bytes: ByteArray): String? {
+            // Comme le vrai stockage, refuse ce qui n'est pas une image (ici : un contenu vide)
+            if (bytes.isEmpty()) return null
+            val path = "/images/recue_${++savedCount}.jpg"
+            files[path] = bytes
+            return path
+        }
 
         override fun delete(path: String) {
             deleted += path
@@ -388,11 +411,11 @@ class StateViewModelTest {
         }
     }
 
-    private fun TestScope.viewModelWithImages(dao: FakeRecipeDao, cleaner: FakeImageCleaner) =
+    private fun TestScope.viewModelWithImages(dao: FakeRecipeDao, cleaner: FakeImageFiles) =
         StateViewModel(
             recipeDao = dao,
             coroutineScope = newTestScope(),
-            imageCleaner = cleaner,
+            imageFiles = cleaner,
             ioDispatcher = StandardTestDispatcher(testScheduler)
         )
 
@@ -404,7 +427,7 @@ class StateViewModelTest {
                 RecipeEntity(id = 2, title = "Sans image", image = "", cookingTime = 10)
             )
         )
-        val cleaner = FakeImageCleaner()
+        val cleaner = FakeImageFiles()
 
         viewModelWithImages(dao, cleaner)
         advanceUntilIdle()
@@ -418,7 +441,7 @@ class StateViewModelTest {
         val dao = daoWithRecipe(
             recipe = RecipeEntity(id = 1, title = "Recette", image = "/images/a.jpg", cookingTime = 10)
         )
-        val cleaner = FakeImageCleaner()
+        val cleaner = FakeImageFiles()
         val viewModel = viewModelWithImages(dao, cleaner)
 
         viewModel.deleteRecipe(1)
@@ -429,7 +452,7 @@ class StateViewModelTest {
 
     @Test
     fun `supprimer une recette sans image ne supprime aucun fichier`() = runTest {
-        val cleaner = FakeImageCleaner()
+        val cleaner = FakeImageFiles()
         val viewModel = viewModelWithImages(daoWithRecipe(), cleaner)
 
         viewModel.deleteRecipe(1)
@@ -443,7 +466,7 @@ class StateViewModelTest {
         val dao = daoWithRecipe(
             recipe = RecipeEntity(id = 1, title = "Recette", image = "/images/ancienne.jpg", cookingTime = 10)
         )
-        val cleaner = FakeImageCleaner()
+        val cleaner = FakeImageFiles()
         val viewModel = viewModelWithImages(dao, cleaner)
 
         viewModel.updateRecipe(
@@ -467,7 +490,7 @@ class StateViewModelTest {
         val dao = daoWithRecipe(
             recipe = RecipeEntity(id = 1, title = "Recette", image = "/images/a.jpg", cookingTime = 10)
         )
-        val cleaner = FakeImageCleaner()
+        val cleaner = FakeImageFiles()
         val viewModel = viewModelWithImages(dao, cleaner)
 
         viewModel.updateRecipe(
@@ -483,6 +506,265 @@ class StateViewModelTest {
         advanceUntilIdle()
 
         assertTrue(cleaner.deleted.isEmpty())
+    }
+
+    // --- Profils importes et transfert ---
+
+    /** ViewModel dont les traitements en arriere-plan (export, import) suivent le temps virtuel du test. */
+    private fun TestScope.transferViewModel(dao: FakeRecipeDao, clock: () -> Long = { 0L }) =
+        StateViewModel(
+            recipeDao = dao,
+            coroutineScope = newTestScope(),
+            ioDispatcher = StandardTestDispatcher(testScheduler),
+            clock = clock
+        )
+
+    private val validExport =
+        """{"format":"easycook-recipes","version":1,"exportedAt":0,"recipes":[
+            |{"title":"Salade","cookingTime":0,"ingredients":[{"quantity":"1","name":"Laitue"},{"quantity":"","name":""}],
+            |"steps":["Laver","  ","Servir"]},
+            |{"title":"Soupe","cookingTime":20}]}""".trimMargin()
+
+    @Test
+    fun `une nouvelle recette appartient par defaut a mon profil`() = runTest {
+        val viewModel = transferViewModel(daoWithRecipe())
+
+        viewModel.addRecipe(
+            title = "Tartine",
+            image = "",
+            cookingTime = 5,
+            description = "",
+            ingredients = listOf(Ingredient("1", "Pain")),
+            steps = emptyList(),
+            onComplete = {}
+        )
+        advanceUntilIdle()
+
+        val added = viewModel.recipes.first { list -> list.any { it.title == "Tartine" } }.first { it.title == "Tartine" }
+        assertEquals(OWN_PROFILE_ID, added.profileId)
+    }
+
+    @Test
+    fun `une recette peut etre ajoutee dans un profil importe`() = runTest {
+        val dao = daoWithRecipe(initialProfiles = listOf(ProfileEntity(id = 7, number = 1, importedAt = 0)))
+        val viewModel = transferViewModel(dao)
+
+        viewModel.addRecipe(
+            title = "Tartine",
+            image = "",
+            cookingTime = 5,
+            description = "",
+            ingredients = listOf(Ingredient("1", "Pain")),
+            steps = emptyList(),
+            profileId = 7,
+            onComplete = {}
+        )
+        advanceUntilIdle()
+
+        val added = viewModel.recipes.first { list -> list.any { it.title == "Tartine" } }.first { it.title == "Tartine" }
+        assertEquals(7, added.profileId)
+    }
+
+    @Test
+    fun `importer des recettes cree le profil 1 avec ces recettes`() = runTest {
+        val viewModel = transferViewModel(daoWithRecipe(), clock = { 123L })
+        var result: ImportResult? = null
+
+        viewModel.importRecipes(validExport) { result = it }
+        advanceUntilIdle()
+
+        val success = result as ImportResult.Success
+        assertEquals(2, success.recipeCount)
+
+        val profile = viewModel.profiles.first { it.isNotEmpty() }.single()
+        assertEquals(success.profileId, profile.id)
+        assertEquals(1, profile.number)
+
+        val imported = viewModel.recipes.first { it.size == 3 }.filter { it.profileId == success.profileId }
+        assertEquals(listOf("Salade", "Soupe"), imported.map { it.title })
+        // Les lignes vides recues sont ecartees comme lors d'une saisie manuelle
+        assertEquals(listOf(Ingredient("1", "Laitue")), imported.first().ingredientList)
+        assertEquals(
+            listOf("Laver", "Servir"),
+            viewModel.observeSteps(imported.first().id).first().map { it.instruction }
+        )
+    }
+
+    @Test
+    fun `les recettes importees ne touchent pas a mon profil`() = runTest {
+        val viewModel = transferViewModel(daoWithRecipe())
+
+        viewModel.importRecipes(validExport) { }
+        advanceUntilIdle()
+
+        val own = viewModel.recipes.first { it.size == 3 }.filter { it.profileId == OWN_PROFILE_ID }
+        assertEquals(listOf("Recette existante"), own.map { it.title })
+    }
+
+    @Test
+    fun `deux imports creent deux profils distincts`() = runTest {
+        val viewModel = transferViewModel(daoWithRecipe())
+
+        viewModel.importRecipes(validExport) { }
+        advanceUntilIdle()
+        viewModel.importRecipes(validExport) { }
+        advanceUntilIdle()
+
+        assertEquals(listOf(1, 2), viewModel.profiles.first { it.size == 2 }.map { it.number })
+    }
+
+    @Test
+    fun `un fichier invalide est refuse sans creer de profil`() = runTest {
+        val dao = daoWithRecipe()
+        val viewModel = transferViewModel(dao)
+        var result: ImportResult? = null
+
+        viewModel.importRecipes("pas du json") { result = it }
+        advanceUntilIdle()
+
+        assertEquals(ImportResult.Failure(ImportError.INVALID_FILE), result)
+        assertTrue(dao.getProfileNumbers().isEmpty())
+    }
+
+    @Test
+    fun `l export de mon profil contient recettes ingredients et etapes`() = runTest {
+        val dao = daoWithRecipe(
+            recipe = RecipeEntity(id = 1, title = "Pizza", image = "/images/pizza.jpg", cookingTime = 40, description = "Napolitaine"),
+            ingredients = listOf(IngredientEntity(id = 1, recipeId = 1, quantity = "250 g", name = "Farine")),
+            steps = listOf(step(id = 1, position = 0, instruction = "Petrir"), step(id = 2, position = 1, instruction = "Cuire"))
+        )
+        val viewModel = transferViewModel(dao, clock = { 42L })
+        var json: String? = null
+
+        viewModel.exportRecipes { json = it }
+        advanceUntilIdle()
+
+        val export = (RecipeTransfer.decode(json!!) as DecodeResult.Success).export
+        assertEquals(42L, export.exportedAt)
+        assertEquals(
+            ExportedRecipe(
+                title = "Pizza",
+                cookingTime = 40,
+                description = "Napolitaine",
+                ingredients = listOf(ExportedIngredient("250 g", "Farine")),
+                steps = listOf("Petrir", "Cuire")
+            ),
+            export.recipes.single()
+        )
+        // Le chemin local de l'image n'a aucun sens sur un autre telephone
+        assertTrue(!json!!.contains("pizza.jpg"))
+    }
+
+    @Test
+    fun `l export de mon profil n inclut pas les recettes importees`() = runTest {
+        val viewModel = transferViewModel(daoWithRecipe())
+        viewModel.importRecipes(validExport) { }
+        advanceUntilIdle()
+        var json: String? = null
+
+        viewModel.exportRecipes { json = it }
+        advanceUntilIdle()
+
+        val export = (RecipeTransfer.decode(json!!) as DecodeResult.Success).export
+        assertEquals(listOf("Recette existante"), export.recipes.map { it.title })
+    }
+
+    @Test
+    fun `l export peut se limiter aux recettes choisies`() = runTest {
+        val dao = FakeRecipeDao(
+            initialRecipes = listOf(
+                RecipeEntity(id = 1, title = "A", image = "", cookingTime = 10),
+                RecipeEntity(id = 2, title = "B", image = "", cookingTime = 10),
+                RecipeEntity(id = 3, title = "C", image = "", cookingTime = 10)
+            )
+        )
+        val viewModel = transferViewModel(dao)
+        var json: String? = null
+
+        viewModel.exportRecipes(recipeIds = setOf(1, 3)) { json = it }
+        advanceUntilIdle()
+
+        val export = (RecipeTransfer.decode(json!!) as DecodeResult.Success).export
+        assertEquals(listOf("A", "C"), export.recipes.map { it.title })
+    }
+
+    @Test
+    fun `la photo d une recette voyage avec elle d un telephone a l autre`() = runTest {
+        val photo = byteArrayOf(1, 2, 3, 4, 5)
+        val senderImages = FakeImageFiles(mutableMapOf("/images/pizza.jpg" to photo))
+        val sender = StateViewModel(
+            recipeDao = daoWithRecipe(
+                recipe = RecipeEntity(id = 1, title = "Pizza", image = "/images/pizza.jpg", cookingTime = 40)
+            ),
+            coroutineScope = newTestScope(),
+            imageFiles = senderImages,
+            ioDispatcher = StandardTestDispatcher(testScheduler)
+        )
+        var json: String? = null
+        sender.exportRecipes { json = it }
+        advanceUntilIdle()
+
+        val receiverDao = FakeRecipeDao()
+        val receiverImages = FakeImageFiles()
+        val receiver = viewModelWithImages(receiverDao, receiverImages)
+        var result: ImportResult? = null
+        receiver.importRecipes(json!!) { result = it }
+        advanceUntilIdle()
+
+        val profileId = (result as ImportResult.Success).profileId
+        val received = receiver.recipes.first { it.isNotEmpty() }.single { it.profileId == profileId }
+        assertTrue(received.image.isNotBlank())
+        assertTrue(photo.contentEquals(receiverImages.files[received.image]))
+    }
+
+    @Test
+    fun `une photo illisible n empeche pas l import de la recette`() = runTest {
+        val json = """{"format":"easycook-recipes","version":1,"exportedAt":0,"recipes":[
+            |{"title":"Base64 casse","image":"%%% pas du base64 %%%"},
+            |{"title":"Image vide","image":""}]}""".trimMargin()
+        val images = FakeImageFiles()
+        val viewModel = viewModelWithImages(FakeRecipeDao(), images)
+        var result: ImportResult? = null
+
+        viewModel.importRecipes(json) { result = it }
+        advanceUntilIdle()
+
+        assertEquals(2, (result as ImportResult.Success).recipeCount)
+        val imported = viewModel.recipes.first { it.size == 2 }
+        assertTrue(imported.all { it.image.isBlank() })
+        assertTrue(images.files.isEmpty())
+    }
+
+    @Test
+    fun `supprimer un profil importe supprime ses recettes et leurs images`() = runTest {
+        val dao = FakeRecipeDao(
+            initialRecipes = listOf(
+                RecipeEntity(id = 1, title = "A moi", image = "/images/moi.jpg", cookingTime = 10),
+                RecipeEntity(id = 2, title = "Importee", image = "/images/importee.jpg", cookingTime = 10, profileId = 5)
+            ),
+            initialSteps = listOf(step(id = 1, recipeId = 2, instruction = "Etape importee")),
+            initialProfiles = listOf(ProfileEntity(id = 5, number = 1, importedAt = 0))
+        )
+        val cleaner = FakeImageFiles()
+        val viewModel = viewModelWithImages(dao, cleaner)
+
+        viewModel.deleteProfile(5)
+        advanceUntilIdle()
+
+        assertEquals(listOf("A moi"), viewModel.recipes.first { it.size == 1 }.map { it.title })
+        assertTrue(viewModel.profiles.first().isEmpty())
+        assertTrue(viewModel.observeSteps(2).first().isEmpty())
+        assertEquals(listOf("/images/importee.jpg"), cleaner.deleted)
+    }
+
+    @Test
+    fun `mon profil ne peut pas etre supprime`() = runTest {
+        val viewModel = transferViewModel(daoWithRecipe())
+
+        viewModel.deleteProfile(OWN_PROFILE_ID)
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.recipes.first { it.isNotEmpty() }.size)
     }
 
     // --- deleteRecipe ---

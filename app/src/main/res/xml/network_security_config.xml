@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Le partage de recettes par QR code passe par HTTP sur le réseau local : le téléphone qui
+    reçoit se connecte directement à l'adresse IP privée du téléphone qui partage, sans nom de
+    domaine ni certificat possibles. C'est le seul trafic réseau de l'application. L'accès est
+    protégé par le code du QR code, et les recettes sont chiffrées (AES-GCM) avec une clé qui ne
+    voyage que dans le QR code : HTTP ne transporte que des données illisibles.
+-->
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <!-- Voulu : Android ne permet pas de limiter ce réglage aux seules adresses IP privées -->
+    <base-config
+        cleartextTrafficPermitted="true"
+        tools:ignore="InsecureBaseConfiguration" />
+</network-security-config>

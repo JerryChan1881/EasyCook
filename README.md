@@ -8,6 +8,9 @@ Elle permet de créer ses propres recettes, de les consulter et de les suivre é
 - **Liste des recettes** : grille de cartes (2 colonnes en portrait, 3 en paysage), avec le temps de cuisson et la suppression après confirmation.
 - **Favoris** : le cœur d'une carte met la recette en favori ; les favoris sont affichés en premier.
 - **Recherche** : la loupe de l'accueil filtre les recettes au fil de la saisie (titre, ingrédients, description), en ignorant majuscules et accents, et classe les résultats par pertinence.
+- **Profils importés** : des onglets au-dessus de la liste (« Mon profil », puis « Profil 1 », « Profil 2 »…) séparent tes recettes de celles reçues d'autres téléphones. Chaque import crée un nouveau profil, dont les recettes se gèrent comme les tiennes ; un profil importé peut être supprimé avec toutes ses recettes.
+- **Partage par QR code** : menu « ⋮ » → « Partager par QR code ». On coche les recettes à envoyer (ou « Tout sélectionner »), puis l'écran affiche un QR code. Sur l'autre téléphone, « Recevoir (scanner un QR code) » télécharge les recettes, photos comprises, dans un nouveau profil. Les deux téléphones doivent être sur le même réseau Wi-Fi (ou l'un connecté au partage de connexion de l'autre).
+- **Export et import de fichier** : le même format JSON peut aussi être enregistré dans un fichier puis importé, pour une sauvegarde ou un envoi par un autre moyen. Les favoris ne sont pas transférés.
 - **Création d'une recette** : nom, photo, temps de cuisson, description, ingrédients et étapes de préparation (facultatives).
 - **Détail et modification** : consultation complète d'une recette et modification de tous ses champs.
 - **Photo de la recette** (facultative) : choisie dans la galerie ou prise avec l'appareil photo, puis recadrée (déplacement et zoom à deux doigts) ; on peut reprendre la photo avant de valider. Les images sont stockées dans l'espace privé de l'application et supprimées avec leur recette.
@@ -78,11 +81,62 @@ La base `easycook.db` contient trois tables liées par `recipeId`, avec suppress
 
 | Table         | Contenu                                                       |
 | ------------- | ------------------------------------------------------------- |
-| `recipes`     | titre, image, temps de cuisson, description, favori           |
+| `recipes`     | titre, image, temps de cuisson, description, favori, profil  |
 | `ingredients` | quantité et nom de chaque ingrédient                          |
 | `steps`       | instruction, position dans la recette et état « terminé »     |
+| `profiles`    | profils importés (numéro affiché, date d'import)             |
 
-Le schéma est en version 4 (ajout des favoris), et les migrations depuis les versions précédentes sont fournies.
+Le schéma est en version 5 (ajout des profils importés), et les migrations depuis les versions précédentes sont fournies.
+
+### Partage par QR code
+
+Un QR code ne contient qu'environ 3 Ko : il ne transporte donc pas les recettes, seulement le moyen de les récupérer (`easycook://share?h=<adresse IP>&p=<port>&t=<code>&k=<clé>&v=1`).
+
+1. Le téléphone qui partage chiffre les recettes choisies, puis ouvre un petit serveur HTTP sur son adresse Wi-Fi, le temps que l'écran du QR code reste affiché.
+2. Le téléphone qui scanne télécharge les recettes à cette adresse en présentant le code d'accès du QR code ; toute autre requête est refusée.
+3. Il les déchiffre avec la clé du QR code, puis les importe dans un nouveau profil.
+
+Il n'y a pas besoin d'Internet, mais les deux téléphones doivent être sur le même réseau local : même Wi-Fi, ou l'un connecté au partage de connexion de l'autre. Les réseaux publics ou « invités » qui isolent les appareils entre eux ne conviennent pas.
+
+#### Autorisations
+
+- **Internet** : accordée à l'installation, nécessaire à toute connexion, même locale.
+- **Appareils à proximité** (`ACCESS_LOCAL_NETWORK`, Android 17 et plus) : demandée au moment de partager ou de recevoir. Sans elle, Android bloque les connexions vers le réseau local.
+- **Caméra** : demandée au premier scan, uniquement sur le téléphone qui reçoit.
+
+#### Sécurité
+
+- **Code d'accès** : 128 bits aléatoires, nouveau à chaque partage, valable tant que l'écran du QR code reste ouvert (on peut donc envoyer à plusieurs téléphones) ; comparé en temps constant.
+- **Chiffrement** : AES-256-GCM avec une clé aléatoire générée à chaque partage. La clé ne voyage que dans le QR code, jamais sur le réseau : un appareil du même Wi-Fi qui intercepte le trafic ne voit que des données illisibles, et toute modification en route est détectée.
+- **Exposition minimale** : le serveur n'écoute que sur l'adresse Wi-Fi (pas sur le réseau mobile) et s'arrête dès qu'on quitte l'écran.
+- **Réception** : seul un QR code pointant vers une adresse de réseau local privé est accepté ; les données sont limitées à 64 Mo, chaque photo doit être une vraie image de moins de 5 Mo, et tout est enregistré comme simple texte ou image dans l'espace privé de l'application.
+
+Le transport lui-même est du HTTP (Android n'accepte pas de certificat pour une adresse IP privée) : `res/xml/network_security_config.xml` l'autorise pour toute l'application, faute de pouvoir le limiter aux adresses privées. C'est aujourd'hui le seul trafic réseau de l'application ; un éventuel futur service en ligne devra utiliser HTTPS.
+
+### Format d'échange des recettes
+
+Les recettes s'échangent dans un fichier JSON (et, plus tard, par QR code) :
+
+```json
+{
+  "format": "easycook-recipes",
+  "version": 1,
+  "exportedAt": 1761487200000,
+  "recipes": [
+    {
+      "title": "Spaghetti Carbonara",
+      "cookingTime": 30,
+      "description": "Une recette romaine simple et crémeuse.",
+      "ingredients": [{ "quantity": "200 g", "name": "Spaghetti" }],
+      "steps": ["Faire bouillir l'eau", "Cuire les pâtes 9 minutes"]
+    }
+  ]
+}
+```
+
+Chaque recette peut aussi contenir un champ `image` : sa photo en JPEG encodée en base64.
+
+`format` et `version` permettent de refuser un fichier étranger ou trop récent ; les champs inconnus sont ignorés. `cookingTime` vaut 0 quand il n'est pas renseigné.
 
 ### Textes et ressources
 
