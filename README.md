@@ -3,6 +3,15 @@
 Application Android de gestion de recettes de cuisine, écrite en Kotlin avec Jetpack Compose.
 Elle permet de créer ses propres recettes, de les consulter et de les suivre étape par étape en cuisinant.
 
+## Aperçu
+
+<p align="center">
+  <img src="docs/screenshots/accueil.jpg" alt="Accueil : grille des recettes avec photos, onglets des profils" width="300">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/detail.jpg" alt="Détail d'une recette : photo, description, ingrédients et préparation" width="300">
+</p>
+<p align="center"><em>L'accueil et le détail d'une recette</em></p>
+
 ## Fonctionnalités
 
 - **Liste des recettes** : grille de cartes (2 colonnes en portrait, 3 en paysage), avec le temps de cuisson et la suppression après confirmation.
@@ -51,28 +60,57 @@ Les tests unitaires tournent sur la JVM, sans émulateur :
 ```
 
 Ils couvrent :
-- `RecipeValidatorTest` : les règles de validation et le nettoyage des saisies ;
-- `StateViewModelTest` : la lecture, l'ajout, la modification et la suppression des recettes et des étapes, avec un faux DAO en mémoire (`FakeRecipeDao`).
+- la logique pure : validation des saisies, recherche, découpage des ingrédients, format JSON, lien du QR code, chiffrement, recadrage ;
+- `RecipeRepositoryTest` : lecture, ajout, modification, suppression, favoris, étapes, photos, import/export et profils, avec un faux DAO en mémoire (`FakeRecipeDao`) ;
+- un test par ViewModel (`HomeViewModelTest`, `AddRecipeViewModelTest`, `RecipeDetailViewModelTest`, `StepByStepViewModelTest`, `ShareRecipesViewModelTest`) : état affiché, actions, conservation après recréation de l'écran ;
+- `TransferNetworkTest` et `ShareRecipesViewModelTest` : un vrai transfert serveur → client en local (127.0.0.1).
+
+Les tests d'interface (Compose) tournent sur un émulateur ou un appareil :
+
+- `EasyCookAppTest` : parcours complets (ajout, recherche, favori, suppression, détail, modification, étape par étape, sélection du partage), sur une base en mémoire : les recettes de l'appareil ne sont pas touchées ;
+- `RecipeFormStateTest` : la saisie du formulaire survit à une rotation ;
+- `RecipeDatabaseMigrationTest` : migration de la base de la version 5 à la version 6, dans un fichier de test dédié.
+
+```bash
+./gradlew connectedDebugAndroidTest
+```
+
+Attention : `connectedDebugAndroidTest` désinstalle l'application à la fin, ce qui efface ses recettes sur l'appareil. Pour garder les données, installez les deux APK puis lancez `adb shell am instrument -w com.example.easycook.test/androidx.test.runner.AndroidJUnitRunner`.
 
 ## Architecture
 
-L'application suit une architecture simple en couches : **UI Compose → ViewModel → DAO Room**.
+L'application suit une architecture en couches : **écran Compose → ViewModel de l'écran → `RecipeRepository` → DAO Room et fichiers des photos**.
+
+- Chaque écran a son propre ViewModel, créé à l'ouverture de l'écran et détruit quand on le quitte. Il expose un seul `uiState` et des actions ; l'écran ne fait qu'afficher cet état.
+- Le `RecipeRepository` est le seul point d'accès aux données, partagé par tous les ViewModels (créé une fois dans `EasyCookApplication`). Ses écritures vont jusqu'au bout même si l'on quitte l'écran juste après avoir validé.
+- La navigation est typée : chaque destination est une classe `@Serializable` dont les arguments sont vérifiés à la compilation (`Route.RecipeDetail(recipeId)`…).
+- Ce qui doit survivre à une rotation est gardé dans le `SavedStateHandle` du ViewModel (onglet choisi, mode modification, sélection du partage…) ou dans un `rememberSaveable` (texte en cours de saisie). Le serveur de partage appartient au ViewModel : le QR code reste le même après une rotation.
 
 ```
 app/src/main/java/com/example/easycook/
-├── MainActivity.kt          Point d'entrée, applique le thème et crée le ViewModel
-├── NavHostcontroller.kt     Graphe de navigation entre les écrans
-├── Routes.kt                Routes de navigation centralisées
-├── StateViewModel.kt        État de l'application et actions (recettes, étapes)
+├── EasyCookApplication.kt   Crée le repository partagé ; nettoie les photos inutilisées au démarrage
+├── MainActivity.kt          Point d'entrée, applique le thème
+├── navigation/
+│   ├── Routes.kt            Destinations typées
+│   └── EasyCookNavHost.kt   Graphe de navigation ; crée le ViewModel de chaque écran
 ├── data/
+│   ├── RecipeRepository.kt  Accès aux recettes, étapes, profils, photos, import/export
 │   ├── RecipeDatabase.kt    Base Room : entités, DAO et migrations
-│   ├── RecipeValidator.kt   Validation des saisies (sans dépendance Android)
-│   └── Recipe.kt, Ingredient.kt, RecipeStep.kt   Modèles utilisés par l'UI
+│   ├── RecipeValidator.kt   Validation et nettoyage des saisies (sans dépendance Android)
+│   ├── RecipeTransfer.kt, TransferLink.kt   Format JSON et lien du QR code
+│   └── Recipe.kt, Ingredient.kt, RecipeStep.kt, Profile.kt   Modèles utilisés par l'UI
+├── transfer/                Serveur, client, chiffrement et fichiers d'export
 └── ui/
-    ├── screens/             Écrans : accueil, ajout, détail, étape par étape
-    ├── composable/          Composants réutilisables (carte, pastille, bouton…)
+    ├── screens/             Un dossier par écran : écran + ViewModel (+ sous-composants)
+    │   ├── home/            Accueil : barre de titre et menu, grille, dialogues
+    │   ├── addrecipe/       Nouvelle recette
+    │   ├── detail/          Consultation et modification
+    │   ├── steps/           Étape par étape
+    │   └── share/           Partage par QR code
+    ├── composable/          Composants réutilisables (carte, onglets, formulaire de recette…)
+    ├── image/               Photo : choix, recadrage, décodage, stockage
     ├── theme/               Couleurs, typographie et formes de la charte
-    └── RecipeErrorMessages.kt   Traduction des erreurs de validation en texte
+    └── RecipeErrorMessages.kt   Traduction des erreurs en texte
 ```
 
 ### Base de données
@@ -81,12 +119,12 @@ La base `easycook.db` contient trois tables liées par `recipeId`, avec suppress
 
 | Table         | Contenu                                                       |
 | ------------- | ------------------------------------------------------------- |
-| `recipes`     | titre, image, temps de cuisson, description, favori, profil  |
+| `recipes`     | titre, nom du fichier photo, temps de cuisson, description, favori, profil |
 | `ingredients` | quantité et nom de chaque ingrédient                          |
 | `steps`       | instruction, position dans la recette et état « terminé »     |
 | `profiles`    | profils importés (numéro affiché, date d'import)             |
 
-Le schéma est en version 5 (ajout des profils importés), et les migrations depuis les versions précédentes sont fournies.
+Le schéma est en version 6, et les migrations depuis les versions précédentes sont fournies. La version 6 ne garde que le nom du fichier de chaque photo (et non plus son chemin complet) : le dossier des photos est retrouvé à chaque lecture, ce qui résiste à une restauration sur un autre appareil.
 
 ### Partage par QR code
 
