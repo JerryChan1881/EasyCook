@@ -276,4 +276,48 @@ class RecipeValidatorTest {
             assertNull(RecipeValidator.validate(title, time, ingredients))
         }
     }
+
+    // --- check : saisie brute du formulaire ---
+
+    @Test
+    fun `check convertit une saisie valide en contenu nettoye`() {
+        val draft = RecipeDraft(
+            title = "  Crêpes ",
+            image = "photo.jpg",
+            cookingTime = " 20 ",
+            description = " Pour 4 ",
+            ingredients = listOf("250 g farine", "  ", "Sel"),
+            steps = listOf(" Mélanger ", "")
+        )
+
+        assertEquals(
+            DraftCheck.Valid(
+                RecipeContent(
+                    title = "Crêpes",
+                    image = "photo.jpg",
+                    cookingTime = 20,
+                    description = "Pour 4",
+                    ingredients = listOf(Ingredient("250 g", "farine"), Ingredient("", "Sel")),
+                    steps = listOf("Mélanger")
+                )
+            ),
+            RecipeValidator.check(draft)
+        )
+    }
+
+    @Test
+    fun `check sans temps de cuisson enregistre l absence de temps`() {
+        val check = RecipeValidator.check(RecipeDraft(title = "Salade", ingredients = listOf("Laitue")))
+
+        assertEquals(Recipe.NO_COOKING_TIME, (check as DraftCheck.Valid).content.cookingTime)
+    }
+
+    @Test
+    fun `check renvoie la premiere erreur de la saisie`() {
+        assertEquals(DraftCheck.Invalid(RecipeError.TITLE_REQUIRED), RecipeValidator.check(RecipeDraft()))
+        assertEquals(
+            DraftCheck.Invalid(RecipeError.NO_INGREDIENT),
+            RecipeValidator.check(RecipeDraft(title = "Vide", ingredients = listOf("", " ")))
+        )
+    }
 }

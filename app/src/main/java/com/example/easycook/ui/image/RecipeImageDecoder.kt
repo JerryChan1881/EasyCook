@@ -52,18 +52,18 @@ object RecipeImageDecoder {
         rotate(bitmap, rotation)
     }.getOrNull()
 
-    /** Image d'une recette prête à afficher, ou null si le fichier est absent ou illisible. */
-    fun loadForDisplay(context: Context, path: String): ImageBitmap? {
-        displayCache.get(path)?.let { return it }
+    /** Photo d'une recette prête à afficher, ou null si le fichier est absent ou illisible. */
+    fun loadForDisplay(context: Context, file: File): ImageBitmap? {
+        val key = file.path
+        displayCache.get(key)?.let { return it }
 
-        val file = File(path)
         if (!file.isFile) {
             return null
         }
 
         return decode(context, Uri.fromFile(file), DISPLAY_MAX_SIZE)
             ?.asImageBitmap()
-            ?.also { displayCache.put(path, it) }
+            ?.also { displayCache.put(key, it) }
     }
 
     private fun exifRotation(exif: ExifInterface): Int =

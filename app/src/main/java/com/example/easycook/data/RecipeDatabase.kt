@@ -45,6 +45,7 @@ data class StepEntity(
 data class RecipeEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val title: String,
+    // Nom du fichier de la photo (dans le dossier des photos de l'application), ou chaîne vide
     val image: String,
     val cookingTime: Int,
     val description: String = "",
@@ -87,6 +88,10 @@ interface RecipeDao {
     // Les favoris d'abord, puis l'ordre de création
     @Query("SELECT * FROM recipes ORDER BY isFavorite DESC, id")
     fun observeRecipes(): Flow<List<RecipeWithIngredients>>
+
+    @Transaction
+    @Query("SELECT * FROM recipes WHERE id = :id")
+    fun observeRecipe(id: Int): Flow<RecipeWithIngredients?>
 
     @Query("UPDATE recipes SET isFavorite = :isFavorite WHERE id = :id")
     suspend fun setFavorite(id: Int, isFavorite: Boolean)
@@ -135,14 +140,14 @@ interface RecipeDao {
 
     /**
      * Crée un nouveau profil importé contenant les recettes de [export] et renvoie son identifiant.
-     * [imagePaths] donne, dans le même ordre que les recettes, le chemin de leur photo déjà enregistrée.
+     * [imageNames] donne, dans le même ordre que les recettes, le nom de leur photo déjà enregistrée.
      * Les saisies vides sont écartées comme lors d'une création manuelle.
      */
     @Transaction
     suspend fun importProfile(
         export: RecipeExport,
         importedAt: Long,
-        imagePaths: List<String> = emptyList()
+        imageNames: List<String> = emptyList()
     ): Int {
         val profileId = insertProfile(
             ProfileEntity(number = ProfileNumbering.next(getProfileNumbers()), importedAt = importedAt)
@@ -152,7 +157,7 @@ interface RecipeDao {
             insertRecipeWithIngredients(
                 recipe = RecipeEntity(
                     title = recipe.title.trim(),
-                    image = imagePaths.getOrElse(index) { "" },
+                    image = imageNames.getOrElse(index) { "" },
                     cookingTime = recipe.cookingTime.coerceAtLeast(Recipe.NO_COOKING_TIME),
                     description = recipe.description.trim(),
                     profileId = profileId
@@ -281,7 +286,7 @@ interface RecipeDao {
 
 @Database(
     entities = [RecipeEntity::class, IngredientEntity::class, StepEntity::class, ProfileEntity::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class RecipeDatabase : RoomDatabase() {
@@ -345,6 +350,21 @@ abstract class RecipeDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Les photos étaient référencées par leur chemin absolu, qui change lors d'une restauration
+         * sur un autre appareil : on ne garde que le nom du fichier (ce qui suit le dernier « / »).
+         */
+        internal val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(IMAGE_PATH_TO_NAME_SQL)
+            }
+        }
+
+        // rtrim(image, <tous les caractères sauf « / »>) ne garde que le dossier ; la suite est le nom du fichier
+        internal const val IMAGE_PATH_TO_NAME_SQL =
+            "UPDATE recipes SET image = substr(image, length(rtrim(image, replace(image, '/', ''))) + 1) " +
+                "WHERE image LIKE '%/%'"
+
         @Volatile
         private var instance: RecipeDatabase? = null
 
@@ -355,7 +375,7 @@ abstract class RecipeDatabase : RoomDatabase() {
                     RecipeDatabase::class.java,
                     "easycook.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_1_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_1_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build().also { instance = it }
             }
         }

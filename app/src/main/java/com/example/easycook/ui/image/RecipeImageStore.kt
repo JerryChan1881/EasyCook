@@ -10,10 +10,11 @@ import java.io.File
 import java.util.UUID
 
 /**
- * Fichiers images des recettes, rangés dans le stockage privé de l'application.
+ * Fichiers des photos de recettes, rangés dans le stockage privé de l'application.
  *
- * Chaque image enregistrée reçoit un nom unique et n'est jamais réécrite :
- * changer l'image d'une recette crée un nouveau fichier et supprime l'ancien.
+ * Chaque photo enregistrée reçoit un nom unique et n'est jamais réécrite :
+ * changer la photo d'une recette crée un nouveau fichier et supprime l'ancien.
+ * La base ne stocke que ce nom ; le dossier est retrouvé ici à chaque accès.
  */
 class RecipeImageStore(context: Context) : RecipeImageFiles {
 
@@ -31,20 +32,26 @@ class RecipeImageStore(context: Context) : RecipeImageFiles {
         return FileProvider.getUriForFile(appContext, "${appContext.packageName}.fileprovider", file)
     }
 
-    /** Enregistre une image recadrée et renvoie son chemin, à stocker dans la recette. */
-    fun save(bitmap: Bitmap): String {
-        val file = File(imagesDir, "${UUID.randomUUID()}.jpg")
-        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, it) }
-        return file.absolutePath
+    /**
+     * Fichier d'une photo de recette, ou null si le nom est vide ou ne désigne pas
+     * un fichier du dossier des photos (un nom contenant « ../ » est ainsi refusé).
+     */
+    fun fileOf(name: String): File? {
+        if (name.isBlank()) return null
+        val file = File(imagesDir, name)
+        return file.takeIf { it.parentFile == imagesDir }
     }
 
-    override fun read(path: String): ByteArray? {
-        val file = File(path)
-        return if (file.parentFile == imagesDir && file.isFile) {
-            runCatching { file.readBytes() }.getOrNull()
-        } else {
-            null
-        }
+    /** Enregistre une photo recadrée et renvoie son nom, à stocker dans la recette. */
+    fun save(bitmap: Bitmap): String {
+        val name = newName()
+        File(imagesDir, name).outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, it) }
+        return name
+    }
+
+    override fun read(name: String): ByteArray? {
+        val file = fileOf(name)?.takeIf { it.isFile } ?: return null
+        return runCatching { file.readBytes() }.getOrNull()
     }
 
     override fun save(bytes: ByteArray): String? {
@@ -58,27 +65,26 @@ class RecipeImageStore(context: Context) : RecipeImageFiles {
             return null
         }
 
-        val file = File(imagesDir, "${UUID.randomUUID()}.jpg")
+        val name = newName()
         return runCatching {
-            file.writeBytes(bytes)
-            file.absolutePath
+            File(imagesDir, name).writeBytes(bytes)
+            name
         }.getOrNull()
     }
 
-    override fun delete(path: String) {
-        val file = File(path)
-        if (file.parentFile == imagesDir) {
-            file.delete()
-        }
+    override fun delete(name: String) {
+        fileOf(name)?.delete()
     }
 
-    override fun deleteUnused(usedPaths: Set<String>) {
+    override fun deleteUnused(usedNames: Set<String>) {
         imagesDir.listFiles()
-            ?.filter { it.absolutePath !in usedPaths }
+            ?.filter { it.name !in usedNames }
             ?.forEach { it.delete() }
         // Les photos brutes de l'appareil photo ne servent que le temps du recadrage
         cameraDir.listFiles()?.forEach { it.delete() }
     }
+
+    private fun newName() = "${UUID.randomUUID()}.jpg"
 
     private companion object {
         const val IMAGES_DIR = "recipe_images"

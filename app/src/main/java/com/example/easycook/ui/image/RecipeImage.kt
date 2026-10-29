@@ -17,22 +17,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Image d'une recette, recadrée pour remplir [modifier].
- * Sans image (ou si le fichier est illisible), affiche l'illustration de remplacement.
+ * Photo d'une recette, recadrée pour remplir [modifier].
+ * Sans photo (ou si le fichier est illisible), affiche l'illustration de remplacement.
+ *
+ * [imageName] est le nom du fichier de la photo, ou une chaîne vide.
  */
 @Composable
 fun RecipeImage(
     recipeId: Int,
-    imagePath: String,
+    imageName: String,
     modifier: Modifier = Modifier,
     iconSize: Dp = 32.dp
 ) {
     val context = LocalContext.current
-    val image by produceState<ImageBitmap?>(initialValue = null, imagePath) {
-        value = if (imagePath.isBlank()) {
-            null
-        } else {
-            withContext(Dispatchers.IO) { RecipeImageDecoder.loadForDisplay(context, imagePath) }
+    val image by produceState<ImageBitmap?>(initialValue = null, imageName) {
+        value = withContext(Dispatchers.IO) {
+            RecipeImageStore(context).fileOf(imageName)
+                ?.let { RecipeImageDecoder.loadForDisplay(context, it) }
         }
     }
 

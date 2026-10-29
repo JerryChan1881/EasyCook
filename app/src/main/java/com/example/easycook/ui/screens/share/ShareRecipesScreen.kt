@@ -1,7 +1,7 @@
-package com.example.easycook.ui.screens
+package com.example.easycook.ui.screens.share
 
-import androidx.activity.compose.BackHandler
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,14 +33,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -51,31 +44,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.easycook.R
-import com.example.easycook.StateViewModel
-import com.example.easycook.data.Recipe
-import com.example.easycook.data.TransferLink
-import com.example.easycook.transfer.TransferClient
-import com.example.easycook.transfer.TransferCrypto
-import com.example.easycook.transfer.TransferServer
 import com.example.easycook.ui.composable.CookingTimeChip
 import com.example.easycook.ui.composable.QrCode
 import com.example.easycook.ui.composable.SectionCard
 import com.example.easycook.ui.rememberLocalNetworkAccess
-import com.example.easycook.ui.rememberSaveableIntSet
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
-
-/** Étapes du partage, une fois les recettes choisies. */
-private sealed interface ShareState {
-    data object Preparing : ShareState
-    data object NoNetwork : ShareState
-    data class Ready(val link: TransferLink) : ShareState
-}
 
 /**
  * Partage de recettes par QR code : on choisit les recettes (ou « Tout sélectionner »),
@@ -83,14 +57,11 @@ private sealed interface ShareState {
  */
 @Composable
 fun ShareRecipesScreen(
-    profileId: Int,
-    navController: NavHostController,
-    stateViewModel: StateViewModel
+    viewModel: ShareRecipesViewModel,
+    onFinish: () -> Unit
 ) {
-    val recipes by stateViewModel.recipes.collectAsState()
-    val profileRecipes = remember(recipes, profileId) { recipes.filter { it.profileId == profileId } }
-    val selectedIds = rememberSaveableIntSet()
-    var isSharing by rememberSaveable { mutableStateOf(false) }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isSharing = state.share != ShareState.Selecting
     val context = LocalContext.current
     val resources = LocalResources.current
     // Android 17+ : l'accès au réseau local doit être accordé avant d'ouvrir le serveur
@@ -101,7 +72,7 @@ fun ShareRecipesScreen(
     )
 
     // Retour depuis le QR code : on revient au choix des recettes plutôt que de quitter
-    BackHandler(enabled = isSharing) { isSharing = false }
+    BackHandler(enabled = isSharing) { viewModel.stopSharing() }
 
     Column(
         modifier = Modifier
@@ -109,11 +80,7 @@ fun ShareRecipesScreen(
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(
-                onClick = {
-                    if (isSharing) isSharing = false else navController.popBackStack()
-                }
-            ) {
+            IconButton(onClick = { if (isSharing) viewModel.stopSharing() else onFinish() }) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.action_back)
@@ -128,19 +95,19 @@ fun ShareRecipesScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (isSharing) {
-            ShareQrCode(
-                profileId = profileId,
-                recipeIds = selectedIds.toSet(),
-                stateViewModel = stateViewModel,
-                onChangeSelection = { isSharing = false },
-                onFinish = { navController.popBackStack() }
-            )
-        } else {
-            RecipeSelection(
-                recipes = profileRecipes,
-                selectedIds = selectedIds,
-                onShare = { requestLocalNetwork { isSharing = true } }
+        when (val share = state.share) {
+            ShareState.Selecting -> if (!state.isLoading) {
+                RecipeSelection(
+                    state = state,
+                    onToggle = viewModel::toggle,
+                    onToggleAll = viewModel::toggleAll,
+                    onShare = { requestLocalNetwork(viewModel::startSharing) }
+                )
+            }
+            else -> ShareQrCode(
+                share = share,
+                onChangeSelection = viewModel::stopSharing,
+                onFinish = onFinish
             )
         }
     }
@@ -148,13 +115,12 @@ fun ShareRecipesScreen(
 
 @Composable
 private fun RecipeSelection(
-    recipes: List<Recipe>,
-    selectedIds: MutableSet<Int>,
+    state: ShareUiState,
+    onToggle: (Int) -> Unit,
+    onToggleAll: () -> Unit,
     onShare: () -> Unit
 ) {
-    // On ignore les recettes sélectionnées puis supprimées entre-temps
-    val selectedCount = recipes.count { it.id in selectedIds }
-    val allSelected = recipes.isNotEmpty() && selectedCount == recipes.size
+    val recipes = state.recipes
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (recipes.isEmpty()) {
@@ -175,23 +141,14 @@ private fun RecipeSelection(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        SelectableRow(
-            checked = allSelected,
-            onToggle = {
-                if (allSelected) {
-                    selectedIds.clear()
-                } else {
-                    selectedIds.addAll(recipes.map { it.id })
-                }
-            }
-        ) {
+        SelectableRow(checked = state.allSelected, onToggle = onToggleAll) {
             Text(
                 text = stringResource(R.string.share_select_all),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = stringResource(R.string.share_selected_count, selectedCount, recipes.size),
+                text = stringResource(R.string.share_selected_count, state.selectedCount, recipes.size),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -202,10 +159,8 @@ private fun RecipeSelection(
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(recipes, key = { it.id }) { recipe ->
                 SelectableRow(
-                    checked = recipe.id in selectedIds,
-                    onToggle = {
-                        if (recipe.id in selectedIds) selectedIds.remove(recipe.id) else selectedIds.add(recipe.id)
-                    }
+                    checked = recipe.id in state.selectedIds,
+                    onToggle = { onToggle(recipe.id) }
                 ) {
                     Text(
                         text = recipe.title,
@@ -225,12 +180,12 @@ private fun RecipeSelection(
 
         Button(
             onClick = onShare,
-            enabled = selectedCount > 0,
+            enabled = state.selectedCount > 0,
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(imageVector = Icons.Default.QrCode, contentDescription = null)
             Spacer(modifier = Modifier.size(8.dp))
-            Text(pluralStringResource(R.plurals.share_generate_qr, selectedCount, selectedCount))
+            Text(pluralStringResource(R.plurals.share_generate_qr, state.selectedCount, state.selectedCount))
         }
     }
 }
@@ -257,53 +212,18 @@ private fun SelectableRow(
 
 @Composable
 private fun ShareQrCode(
-    profileId: Int,
-    recipeIds: Set<Int>,
-    stateViewModel: StateViewModel,
+    share: ShareState,
     onChangeSelection: () -> Unit,
     onFinish: () -> Unit
 ) {
-    var state by remember { mutableStateOf<ShareState>(ShareState.Preparing) }
-    var downloads by remember { mutableIntStateOf(0) }
-
-    // Le serveur vit tant que cet écran est affiché ; il s'arrête dès qu'on le quitte
-    LaunchedEffect(recipeIds) {
-        state = ShareState.Preparing
-        val address = withContext(Dispatchers.IO) { TransferClient.localAddress() }
-        if (address == null) {
-            state = ShareState.NoNetwork
-            return@LaunchedEffect
-        }
-
-        val json = suspendCancellableCoroutine { continuation ->
-            stateViewModel.exportRecipes(profileId = profileId, recipeIds = recipeIds) {
-                continuation.resume(it)
-            }
-        }
-        val token = TransferServer.newToken()
-        val key = TransferCrypto.newKey()
-        val server = withContext(Dispatchers.IO) {
-            // Chiffré avec une clé qui ne voyage que dans le QR code ; serveur limité à l'adresse Wi-Fi
-            val payload = TransferCrypto.encrypt(json.toByteArray(Charsets.UTF_8), key)
-            TransferServer(payload, token, bindAddress = address) { downloads++ }
-        }
-        try {
-            server.start(this)
-            state = ShareState.Ready(TransferLink(host = address, port = server.port, token = token, key = key))
-            awaitCancellation()
-        } finally {
-            server.stop()
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        when (val current = state) {
-            ShareState.Preparing -> {
+        when (share) {
+            ShareState.Selecting, ShareState.Preparing -> {
                 Spacer(modifier = Modifier.height(48.dp))
                 CircularProgressIndicator()
                 Spacer(modifier = Modifier.height(16.dp))
@@ -328,7 +248,7 @@ private fun ShareQrCode(
 
             is ShareState.Ready -> {
                 Text(
-                    text = pluralStringResource(R.plurals.share_scan_hint, recipeIds.size, recipeIds.size),
+                    text = pluralStringResource(R.plurals.share_scan_hint, share.recipeCount, share.recipeCount),
                     style = MaterialTheme.typography.titleMedium,
                     textAlign = TextAlign.Center
                 )
@@ -343,7 +263,7 @@ private fun ShareQrCode(
                 ) {
                     Box(modifier = Modifier.padding(16.dp)) {
                         QrCode(
-                            content = current.link.encode(),
+                            content = share.link.encode(),
                             contentDescription = stringResource(R.string.share_qr_description),
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -357,10 +277,10 @@ private fun ShareQrCode(
                         text = stringResource(R.string.share_same_network),
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    if (downloads > 0) {
+                    if (share.downloads > 0) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = pluralStringResource(R.plurals.share_sent_count, downloads, downloads),
+                            text = pluralStringResource(R.plurals.share_sent_count, share.downloads, share.downloads),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.secondary
                         )

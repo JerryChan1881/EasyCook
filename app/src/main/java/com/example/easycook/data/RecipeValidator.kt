@@ -87,4 +87,53 @@ object RecipeValidator {
 
         return null
     }
+
+    /**
+     * Vérifie la saisie d'un formulaire de recette et, si elle est valide,
+     * la convertit en contenu prêt à enregistrer (espaces et lignes vides retirés).
+     */
+    fun check(draft: RecipeDraft): DraftCheck {
+        val ingredients = draft.ingredients.map(IngredientParser::parse)
+
+        validate(title = draft.title, rawCookingTime = draft.cookingTime, ingredients = ingredients)
+            ?.let { return DraftCheck.Invalid(it) }
+
+        return DraftCheck.Valid(
+            RecipeContent(
+                title = draft.title.trim(),
+                image = draft.image,
+                cookingTime = cookingTimeOrNone(draft.cookingTime),
+                description = draft.description.trim(),
+                ingredients = cleanIngredients(ingredients),
+                steps = cleanSteps(draft.steps)
+            )
+        )
+    }
+}
+
+/** Saisie brute d'un formulaire de recette, telle que tapée par l'utilisateur. */
+data class RecipeDraft(
+    val title: String = "",
+    /** Nom du fichier de la photo, ou chaîne vide. */
+    val image: String = "",
+    val cookingTime: String = "",
+    val description: String = "",
+    /** Une ligne de texte libre par ingrédient (ex. « 200 g de spaghetti »). */
+    val ingredients: List<String> = listOf(""),
+    val steps: List<String> = listOf("")
+)
+
+/** Contenu validé d'une recette, prêt à être enregistré. */
+data class RecipeContent(
+    val title: String,
+    val image: String,
+    val cookingTime: Int,
+    val description: String,
+    val ingredients: List<Ingredient>,
+    val steps: List<String>
+)
+
+sealed interface DraftCheck {
+    data class Valid(val content: RecipeContent) : DraftCheck
+    data class Invalid(val error: RecipeError) : DraftCheck
 }

@@ -1,21 +1,24 @@
 package com.example.easycook.data
 
 /**
- * Accès aux fichiers images des recettes.
+ * Accès aux fichiers des photos de recettes.
  *
- * Interface séparée du stockage Android pour que le ViewModel reste testable sur la JVM.
+ * Une photo est désignée par son seul nom de fichier (ex. « 3f2a….jpg »), jamais par un chemin :
+ * le dossier qui les contient peut changer, par exemple après une restauration sur un autre appareil.
+ *
+ * Interface séparée du stockage Android pour que le repository reste testable sur la JVM.
  */
 interface RecipeImageFiles {
 
-    /** Supprime l'image d'une recette ; sans effet si le chemin n'est pas une image de l'application. */
-    fun delete(path: String)
+    /** Supprime une photo ; sans effet si le nom ne désigne pas une photo de l'application. */
+    fun delete(name: String)
 
-    /** Supprime les images qu'aucune recette n'utilise (formulaires abandonnés, images remplacées…). */
-    fun deleteUnused(usedPaths: Set<String>)
+    /** Supprime les photos qu'aucune recette n'utilise (formulaires abandonnés, photos remplacées…). */
+    fun deleteUnused(usedNames: Set<String>)
 
-    /** Contenu d'une image de recette, pour l'envoyer à un autre téléphone ; null si illisible. */
-    fun read(path: String): ByteArray?
+    /** Contenu d'une photo, pour l'envoyer à un autre téléphone ; null si illisible. */
+    fun read(name: String): ByteArray?
 
-    /** Enregistre une image reçue d'un autre téléphone et renvoie son chemin ; null si ce n'est pas une image. */
+    /** Enregistre une photo reçue d'un autre téléphone et renvoie son nom ; null si ce n'est pas une image. */
     fun save(bytes: ByteArray): String?
 }

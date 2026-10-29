@@ -48,12 +48,12 @@ import kotlinx.coroutines.withContext
  * toujours par l'écran de recadrage, d'où l'on peut aussi reprendre la photo.
  * Avec une image : un aperçu, et les boutons pour la changer ou la retirer.
  *
- * [imagePath] est le chemin du fichier enregistré, ou une chaîne vide.
+ * [imageName] est le nom du fichier de la photo, ou une chaîne vide.
  */
 @Composable
 fun RecipeImageField(
     recipeId: Int,
-    imagePath: String,
+    imageName: String,
     onImageChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -103,7 +103,7 @@ fun RecipeImageField(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        if (imagePath.isBlank()) {
+        if (imageName.isBlank()) {
             OutlinedButton(
                 onClick = { showSourceChooser = true },
                 modifier = Modifier.fillMaxWidth()
@@ -115,7 +115,7 @@ fun RecipeImageField(
         } else {
             RecipeImage(
                 recipeId = recipeId,
-                imagePath = imagePath,
+                imageName = imageName,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(CropMath.ASPECT_RATIO)
@@ -183,8 +183,8 @@ fun RecipeImageField(
             onConfirm = { cropped ->
                 cropSourceUri = null
                 coroutineScope.launch {
-                    val savedPath = withContext(Dispatchers.IO) { imageStore.save(cropped) }
-                    onImageChange(savedPath)
+                    val savedName = withContext(Dispatchers.IO) { imageStore.save(cropped) }
+                    onImageChange(savedName)
                 }
             }
         )

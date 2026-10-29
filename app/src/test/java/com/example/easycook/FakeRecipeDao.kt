@@ -8,12 +8,13 @@ import com.example.easycook.data.RecipeWithIngredients
 import com.example.easycook.data.StepEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 /**
  * Faux DAO implementant [RecipeDao] entierement en memoire.
  *
- * Objectif : tester [StateViewModel] sans Room, sans Android et sans emulateur.
+ * Objectif : tester le repository et les ViewModels sans Room, sans Android et sans emulateur.
  * On reproduit le comportement qui compte pour le ViewModel :
  * - [observeRecipes] emet la liste a jour a chaque ecriture
  * - [nextStepPosition] calcule la position suivante comme le fait SQL
@@ -47,6 +48,13 @@ class FakeRecipeDao(
                         ingredients = ingredients.value.filter { it.recipeId == recipe.id }
                     )
                 }
+        }
+
+    override fun observeRecipe(id: Int): Flow<RecipeWithIngredients?> =
+        combine(recipes, ingredients) { recipeList, ingredientList ->
+            recipeList.firstOrNull { it.id == id }?.let { recipe ->
+                RecipeWithIngredients(recipe = recipe, ingredients = ingredientList.filter { it.recipeId == id })
+            }
         }
 
     override suspend fun insertRecipe(recipe: RecipeEntity): Long {

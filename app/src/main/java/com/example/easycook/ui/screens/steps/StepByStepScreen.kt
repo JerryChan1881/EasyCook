@@ -1,6 +1,5 @@
-package com.example.easycook.ui.screens
+package com.example.easycook.ui.screens.steps
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,79 +31,36 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.easycook.R
-import com.example.easycook.StateViewModel
-import com.example.easycook.data.Recipe
 import com.example.easycook.data.RecipeStep
 import com.example.easycook.ui.composable.EasyCookFab
 
 @Composable
 fun StepByStepScreen(
-    recipe: Recipe,
-    navController: NavHostController,
-    stateViewModel: StateViewModel
+    viewModel: StepByStepViewModel,
+    onBack: () -> Unit
 ) {
-    val steps by stateViewModel.observeSteps(recipe.id)
-        .collectAsState(initial = emptyList())
-    val focusRequester = remember { FocusRequester() }
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var pendingStepId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var instructionDraft by rememberSaveable { mutableStateOf("") }
-    var errorMessage by rememberSaveable { mutableStateOf<Int?>(null) }
-
-    val startAddingStep = {
-        errorMessage = null
-        instructionDraft = ""
-        stateViewModel.addStep(recipe.id, "") { newStepId ->
-            pendingStepId = newStepId
-        }
-    }
-
-    val confirmDraft: () -> Unit = {
-        val trimmed = instructionDraft.trim()
-        if (trimmed.isBlank()) {
-            errorMessage = R.string.error_instruction_empty
-        } else {
-            pendingStepId?.let { stepId ->
-                stateViewModel.updateStepInstruction(stepId, trimmed)
-            }
-            pendingStepId = null
-            errorMessage = null
-            instructionDraft = ""
-        }
-    }
-
-    val cancelDraft: () -> Unit = {
-        pendingStepId?.let { stepId -> stateViewModel.deleteStep(stepId) }
-        pendingStepId = null
-        errorMessage = null
-        instructionDraft = ""
+    // Texte en cours de saisie ; il repart de l'instruction de l'étape chaque fois qu'on en ouvre une
+    var instructionDraft by rememberSaveable(state.editingStepId) {
+        mutableStateOf(state.steps.find { it.id == state.editingStepId }?.instruction.orEmpty())
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            IconButton(
-                onClick = {
-                    if (navController.previousBackStackEntry != null) {
-                        navController.popBackStack()
-                    }
-                }
-            ) {
+            IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.action_back)
@@ -112,7 +68,7 @@ fun StepByStepScreen(
             }
 
             Text(
-                text = recipe.title,
+                text = state.recipeTitle,
                 modifier = Modifier.padding(horizontal = 16.dp),
                 style = MaterialTheme.typography.headlineMedium
             )
@@ -128,103 +84,41 @@ fun StepByStepScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (steps.isNotEmpty()) {
-                val doneCount = steps.count { it.isDone }
-
-                LinearProgressIndicator(
-                    progress = { doneCount.toFloat() / steps.size },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = pluralStringResource(R.plurals.step_by_step_progress, steps.size, doneCount, steps.size),
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodyMedium
+            when {
+                state.isLoading -> Unit
+                state.steps.isEmpty() -> NoSteps()
+                else -> {
+                    StepsProgress(
+                        doneCount = state.doneCount,
+                        totalCount = state.steps.size,
+                        onUncheckAll = viewModel::uncheckAll
                     )
 
-                    if (doneCount > 0) {
-                        TextButton(onClick = { stateViewModel.resetSteps(recipe.id) }) {
-                            Text(stringResource(R.string.step_by_step_uncheck_all))
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp)
+                    ) {
+                        items(state.steps, key = { it.id }) { step ->
+                            StepCard(
+                                step = step,
+                                isEditing = step.id == state.editingStepId,
+                                instructionDraft = instructionDraft,
+                                showEmptyError = state.showEmptyInstructionError,
+                                onInstructionDraftChange = { instructionDraft = it },
+                                onStartEditing = { viewModel.startEditing(step.id) },
+                                onConfirmEditing = { viewModel.confirmInstruction(instructionDraft) },
+                                onCancelEditing = viewModel::cancelEditing,
+                                onToggleDone = { viewModel.setDone(step.id, it) },
+                                onDelete = { viewModel.deleteStep(step.id) }
+                            )
                         }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            if (steps.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.step_by_step_empty_title),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = stringResource(R.string.step_by_step_empty_hint),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        bottom = 96.dp
-                    )
-                ) {
-                    items(steps, key = { it.id }) { step ->
-                        StepCard(
-                            step = step,
-                            isEditing = step.id == pendingStepId,
-                            instructionDraft = instructionDraft,
-                            errorMessage = errorMessage,
-                            onInstructionDraftChange = { instructionDraft = it },
-                            onStartEditing = {
-                                pendingStepId = step.id
-                                instructionDraft = step.instruction
-                                errorMessage = null
-                            },
-                            onConfirmEditing = confirmDraft,
-                            onCancelEditing = cancelDraft,
-                            onToggleDone = { isChecked ->
-                                stateViewModel.toggleStep(step.id, isChecked)
-                            },
-                            onDelete = {
-                                if (pendingStepId == step.id) {
-                                    pendingStepId = null
-                                    errorMessage = null
-                                    instructionDraft = ""
-                                }
-                                stateViewModel.deleteStep(step.id)
-                            },
-                            focusRequester = focusRequester
-                        )
                     }
                 }
             }
         }
 
         EasyCookFab(
-            onClick = { startAddingStep() },
+            onClick = viewModel::startAddingStep,
             icon = Icons.Default.Add,
             contentDescription = stringResource(R.string.step_add),
             modifier = Modifier
@@ -234,19 +128,75 @@ fun StepByStepScreen(
     }
 }
 
+/** Barre de progression, compteur d'étapes terminées et bouton « Tout décocher ». */
+@Composable
+private fun StepsProgress(doneCount: Int, totalCount: Int, onUncheckAll: () -> Unit) {
+    LinearProgressIndicator(
+        progress = { doneCount.toFloat() / totalCount },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = pluralStringResource(R.plurals.step_by_step_progress, totalCount, doneCount, totalCount),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        if (doneCount > 0) {
+            TextButton(onClick = onUncheckAll) {
+                Text(stringResource(R.string.step_by_step_uncheck_all))
+            }
+        }
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+}
+
+@Composable
+private fun NoSteps() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = stringResource(R.string.step_by_step_empty_title),
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = stringResource(R.string.step_by_step_empty_hint),
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
 @Composable
 private fun StepCard(
     step: RecipeStep,
     isEditing: Boolean,
     instructionDraft: String,
-    @StringRes errorMessage: Int?,
+    showEmptyError: Boolean,
     onInstructionDraftChange: (String) -> Unit,
     onStartEditing: () -> Unit,
     onConfirmEditing: () -> Unit,
     onCancelEditing: () -> Unit,
     onToggleDone: (Boolean) -> Unit,
-    onDelete: () -> Unit,
-    focusRequester: FocusRequester
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -269,9 +219,7 @@ private fun StepCard(
                     OutlinedTextField(
                         value = instructionDraft,
                         onValueChange = { onInstructionDraftChange(it) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(focusRequester),
+                        modifier = Modifier.weight(1f),
                         label = { Text(stringResource(R.string.step_instruction)) },
                         placeholder = { Text(stringResource(R.string.step_instruction_placeholder)) },
                         singleLine = false,
@@ -329,9 +277,9 @@ private fun StepCard(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (errorMessage != null) {
+                    if (showEmptyError) {
                         Text(
-                            text = stringResource(errorMessage),
+                            text = stringResource(R.string.error_instruction_empty),
                             modifier = Modifier.weight(1f),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall

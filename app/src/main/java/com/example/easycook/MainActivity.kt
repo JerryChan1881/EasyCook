@@ -1,6 +1,5 @@
 package com.example.easycook
 
-import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,12 +10,12 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import androidx.navigation.compose.rememberNavController
+import com.example.easycook.data.RecipeRepository
+import com.example.easycook.navigation.EasyCookNavHost
+import com.example.easycook.transfer.ContentResolverDocuments
+import com.example.easycook.transfer.TextDocuments
 import com.example.easycook.ui.theme.EasyCookTheme
 
 class MainActivity : ComponentActivity() {
@@ -26,33 +25,27 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
+        val repository = (application as EasyCookApplication).repository
+
         setContent {
             EasyCookTheme {
-                EasyCookApp()
+                EasyCookApp(
+                    repository = repository,
+                    documents = remember { ContentResolverDocuments(applicationContext) }
+                )
             }
         }
     }
 }
 
-
-
 @Composable
-fun EasyCookApp() {
-
-    val navController = rememberNavController()
-    val application = LocalContext.current.applicationContext as Application
-    val stateViewModel: StateViewModel = viewModel(
-        factory = viewModelFactory {
-            initializer { StateViewModel.from(application) }
-        }
-    )
-
+fun EasyCookApp(repository: RecipeRepository, documents: TextDocuments) {
     Scaffold(
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
-        NavHostModel(
-            navController = navController,
-            stateViewModel = stateViewModel,
+        EasyCookNavHost(
+            repository = repository,
+            documents = documents,
             modifier = Modifier
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding)

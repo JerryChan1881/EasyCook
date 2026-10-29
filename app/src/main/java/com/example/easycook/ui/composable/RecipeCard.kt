@@ -65,7 +65,7 @@ fun RecipeCard(
         ) {
             RecipeImage(
                 recipeId = recipe.id,
-                imagePath = recipe.image,
+                imageName = recipe.image,
                 modifier = Modifier.fillMaxSize()
             )
 

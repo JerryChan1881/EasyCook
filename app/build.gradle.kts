@@ -51,6 +51,8 @@ dependencies {
     implementation(libs.zxing.android.embedded)
     implementation(libs.zxing.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
